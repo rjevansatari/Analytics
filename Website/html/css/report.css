@@ -1,0 +1,41 @@
+.formcent {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    width:400px;
+    height:300px;
+    margin-top: -150px; /*set to a negative number 1/2 of your height*/
+    margin-left: -200px; /*set to a negative number 1/2 of your width*/
+    border: 2px solid;
+    background-color: silver;
+    text-align: center;
+}
+#cal1Container {
+    position: absolute;
+    display: none;
+}
+p, #cal1Container {
+    margin: 1em;
+}
+textarea {
+    width: 100%;
+}
+#cal1Container {
+    z-index: 500;
+}
+.dp-highlighter {
+    z-index: 1;
+}
+table, #parms {
+    border-collapse: collapse;
+}
+
+td, #parms {
+    padding: .5em;
+}
+
+.report {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: small;
+}
+	

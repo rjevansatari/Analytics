@@ -1,0 +1,32 @@
+<xml>
+<title>
+DAU By Date
+</title>
+<description>
+This report shows the DAU by date for a selected game and or client for a specified date range.
+</description>
+<query name="dau" title="DAU By Date">
+	select stat_date as Date,
+	sum(value) as DAU
+	from star.s_game_day
+	where game_id=$gameid
+	and client_id=$clientid
+	and stat_date between '$startdate' and '$enddate'
+	and metric='ActiveUsersByDay'
+	group by 1
+	order by 1
+</query>
+<parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
+	select distinct game_id, game_name
+	from lookups.l_flurry_game
+	order by 2
+</parm>
+<parm name="clientid" type="select" text ="Client" default="iPhone">
+	<option value="1">iPhone</option>
+	<option value="2">Android</option>
+</parm>
+<parm name="startdate" type="date" text="Start date"/>
+<parm name="enddate" type="date" text="End date"/>
+<column name="DAU" format="number"/>
+<column name="Date" format="date"/>
+</xml>

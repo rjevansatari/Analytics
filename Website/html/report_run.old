@@ -1,0 +1,198 @@
+<?php
+	ini_set('memory_limit', '128M');
+	error_reporting(E_ALL);
+	date_default_timezone_set('America/Los_Angeles');
+
+	define('__ROOT__', dirname(dirname(__FILE__))); 
+	define('__DEBUG__', TRUE);
+
+	//HTML Table output
+	require_once 'HTML/Table.php';
+
+	//Set up debugging
+	require_once 'Log.php';
+
+	//XML Parser
+	require_once 'XML/Unserializer.php';
+	
+	// Config
+	require_once (__ROOT__.'/inc/db.php');
+	require_once (__ROOT__.'/inc/config.php');
+	require_once (__ROOT__.'/inc/report_class.php');
+
+	if ( isset($_GET['report']) ) {
+		$report_name=$_GET['report'];
+		// Get the report parameter lit to put in query WERE clause
+		$parms=report_parms($_GET);
+	}
+	else {
+		$report_name="mobile_dau_by_date";
+		$parms=array('gameid' =>1, 'clientid' => 1, 'startdate' => "'2012-08-01'", 'enddate' => "'2012-08-21'");
+	}
+
+
+	$mdb2 = db_connect();
+
+	// Parse the report
+	$xml =new XML_Unserializer();
+	$xml->setOption(XML_UNSERIALIZER_OPTION_ATTRIBUTES_PARSE, TRUE);
+	$xml->unserialize(__ROOT__ ."/reports/$report_name".".xml", TRUE);
+	$result = $xml->getUnserializedData();
+	
+	process_report($xml);
+
+	// Get tne SQL to run
+	$queries = $result['query']['_content'];
+	
+	$sql = $result['query']['_content'];
+
+	if ( isset($result['title']) ) {
+		$title = $result['title'];
+	}
+	if ( isset($result['description']) ) {
+		$description = $result['description'];
+	}
+	if ( isset($result['column']) ) {
+		$format=$result['column'];
+	}
+
+	// Get the results of the query
+	$result = run_query($sql, $parms);
+	if ( $result ) {
+		$page=build_table($result, $report_name, $title, $description, $format);
+	}
+
+	//Output Results
+        echo "<h1>$title</h1>\n";
+        echo "<h2>Report Name: $report_name</h2>\n";
+        echo "<p>$description</p>\n";
+        echo "<form method='post' action='report_download.php'>\n";
+        echo "<input name='report' type='hidden' value='" . $page['file'] . "'>\n";
+        echo "<input type='submit' value='Download CSV'>\n";
+        echo "</form>\n";
+        echo $page['table'];
+
+function process_report($report) {
+	
+	foreach ( $report as $key => $value ) {
+		
+	}
+}
+
+function report_parms($get) {
+	
+	$result = array();
+
+	foreach ($_GET as $key=>$value) {
+		if ( $key != "report" ) {
+			$result[$key] = $value;
+		}
+	}
+
+	return $result;
+
+}
+
+function run_query($sql, $parms) {
+
+	global $mdb2;
+
+	foreach ($parms as $key=>$value) {
+		$sql=str_replace("$".$key, "$value", $sql);
+	}	
+	
+	$results = run_sql($mdb2, $sql);
+
+        if (PEAR::isError($results) || !$results->valid()) {
+        	echo " <p>SQL Error: $msg.<br>$sql<br>";
+        	$msg=$results->getMessage();
+		return FALSE;
+	}
+	else {
+		return $results;
+	}
+}
+
+function build_table($results, $report, $title, $description, $format='') {
+
+	//Create EXCEL output object
+	$csv = fopen("/tmp/$report"."_".date('Ymdhis').".csv","w") or die ("ERROR: Could not open file...");
+
+	fwrite($csv,"$title\n");
+	fwrite($csv,"$report\n");
+	fwrite($csv,"$description\n");
+	fwrite($csv,"\n");
+
+	$column_format = array();
+	
+	$attrs = array('width' => '600', 'border' => '1');
+	$table = new HTML_Table($attrs);
+	$table->setAutoGrow(true);
+	$hrAttrs = array('bgcolor' => 'silver', 'align' => 'center');
+	$table->setRowAttributes(0, $hrAttrs, true);
+	$hrAttrs = array('align' => 'right');
+
+	foreach ($format as $key => $value) {
+		
+		if ( "$key" == "name") {
+			$column_format[strtolower($value)]=$format['format'];
+			break;
+		}
+		else {
+			foreach ($value as $key2 => $value2) {
+				$column_format[strtolower($value2)]=$value['format'];
+				break;
+			}
+		}
+	}
+
+	$record=0;
+
+	while ($row = $results->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+
+		if ( $record > 0 ) {
+			$col=0;
+			$table->setCellContents($record, $col, "$record");	
+			$table->setRowAttributes($record, $hrAttrs, true);
+			foreach ($row as $key => $value) {
+				$col++;
+				if ( isset($column_format[$key]) ) {
+					$fmt_value=format_column($value, $column_format[$key]);
+				}
+				$table->setCellContents($record, $col, $fmt_value);	
+				if ( $col == 1 ) { fwrite($csv, "$value"); }
+				else { fwrite($csv,",$value"); }
+			}
+			fwrite($csv,"\n");
+                }
+		else if ( $record == 0 ) {
+			$col=0;
+			$table->setHeaderContents(0, $col, '#');
+			foreach ($row as $key => $value) {
+				$col++;
+				$table->setHeaderContents($record, $col, ucfirst($key));
+				if ( $col == 1 ) { fwrite($csv, "$key"); }
+				else { fwrite($csv,",$key"); }
+			}
+			fwrite($csv,"\n");
+		}
+
+		$record++;
+
+	}
+	$results = array();
+	$results['file']="$report"."_".date('Ymdhis').".csv";
+	$results['table']=$table->toHtml();
+	return $results;
+}
+
+function format_column($value, $format) {
+
+	switch ($format) {
+		case 'number':
+			$value=number_format($value);
+		break;
+	}
+	return $value;
+}	
+?>

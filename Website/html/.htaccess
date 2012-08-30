@@ -1,0 +1,6 @@
+AuthName "Please enter a valid user name and password."
+AuthType Basic
+AuthUserFile /var/www/html/analytics/.htpasswd
+AuthGroupFile /dev/null
+require user analytics
+AddType application/x-httpd-php .html .htm

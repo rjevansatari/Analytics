@@ -1,0 +1,53 @@
+<xml>
+<title>Mobile Numbers By Date</title>
+<description>
+This report shows unique users and frequency of events for selected games within a specified date range.
+</description>
+<query name="Events" title="User Event Trends">
+drop table if exists tmp.event;
+
+create temporary table tmp.event(index(user_id)) engine=MyIsam
+as 
+select user_id, 
+event_id,
+stat_date,
+stat_time
+from star.s_user_event
+where game_id=$gameid
+and client_id=$clientid
+and event_id=case when $eventid=-2 then event_id else $eventid end
+and stat_date between '$startdate' and '$enddate'
+group by 1,2,3,4
+;
+
+SELECT stat_date as Date, 
+event_name as "Event",
+count(distinct user_id) as "Unique Users",
+count(distinct concat(user_id,stat_time)) as "# Events"
+from tmp.event a, lookups.l_event e
+where a.event_id=e.event_id
+group by 1,2
+order by 1,2
+;
+</query>
+<parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
+	select distinct game_id, game_name
+	from lookups.l_flurry_game
+	order by 2
+</parm>
+<parm name="clientid" type="select" text ="Client" default="iPhone">
+	<option value="1">iPhone</option>
+	<option value="2">Android</option>
+</parm>
+<parm name="eventid" value="event_id" display="event_name" text="Event" type="query">
+	select distinct event_id, event_name
+	from lookups.l_event
+	union
+	select -2, "** All Events **" as event_name
+	order by 2
+</parm>
+<parm name="startdate" type="date" text="Start Date"/>
+<parm name="enddate" type="date" text="End Date"/>
+<column name="Unique Users" format="number"/>
+<column name="Events" format="number"/>
+</xml>
