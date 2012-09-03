@@ -21,15 +21,21 @@
 	require_once (__ROOT__.'/inc/config.php');
 	require_once (__ROOT__.'/inc/report_class.php');
 
+	$report='';
 	$menu=0;
 
 	// Check to see if we have a menu passed
 	if ( isset($_GET['_menu']) ) {
 		$menu=$_GET['_menu'];
 	}
-
+	if ( isset($_GET['_report']) ) {
+		$report=$_GET['_report'];
+	};
+		
+	// Connect to the DB
 	$db = db_connect();
-	build_nav($menu);
+	// Build the menu
+	build_nav($report, $menu);
 
 function get_name_from_parent($parent) {
 
@@ -66,24 +72,36 @@ function get_menus($level) {
 	return $menu;
 }
 
-function get_menu_level($id) {
+function get_level($report, $menu) {
 
 	global $db;
 
-	$sql = "SELECT level
+	if ( $report !='' ) {
+		$sql = "SELECT level
 		FROM reporting.navigation
-		WHERE id=$id";
+		WHERE report='".$report."';";
+	}
+	elseif ( $menu !=0 )  {
+		$sql = "SELECT level
+		FROM reporting.navigation
+		WHERE id=$menu;";
+	}
+	else {
+		return 1;
+	}
 
+	// Process the results and return the level
 	$result = run_sql($db, $sql);
 	$row = $result[0]->fetch_assoc();
 
 	if ( isset($row['level']) ) { 
-		return $row['level'];
+		$level=$row['level'];
 	}
 	else {
 		return 0;
 	}
-		
+	
+	return $row['level']+1;
 }
 
 function get_parent($menu) {
@@ -115,11 +133,34 @@ function has_child($menu) {
 	$row = $result[0]->fetch_assoc();
 
 	if ( isset($row['count']) ) { 
-		return $row['count'];
+		if ( $row['count'] > 0 ) {
+			return TRUE;
+		}
+		else{
+			return FALSE;
+		}
 	}
 	else {
-		return 0;
+		return FALSE;
 	}
+}
+
+function get_menu_from_report($report) {
+
+	global $db;
+
+	$sql = "SELECT id
+		FROM reporting.navigation
+		WHERE report='".$report."';";
+
+	$result = run_sql($db, $sql);
+	$row = $result[0]->fetch_assoc();
+
+	if ( !isset($row['id']) ) { 
+		echo "<br>ERROR: Could not get report for menu item $menu.<br>\n";
+	}
+	
+	return $row['id'];
 }
 
 function get_report_from_menu($menu) {
@@ -138,7 +179,6 @@ function get_report_from_menu($menu) {
 	}
 	
 	return $row['report'];
-
 }
 
 function show_report($report) {
@@ -149,7 +189,7 @@ function show_report($report) {
 	echo "$xml";
 }
 	
-function build_nav($menu=0) {
+function build_nav($report,$menu) {
 
 	global $db;
 
@@ -158,7 +198,12 @@ function build_nav($menu=0) {
 		ORDER BY level, name";
 
 	$result = run_sql($db, $sql);
-	$level = 1+get_menu_level($menu);
+	$level = get_level($report, $menu);
+
+	if ( $report != '' ) {
+		$level = $level-1;
+		$menu = get_parent(get_menu_from_report($report));
+	}
 
 	//Read through the result to create the navigation
         require_once(__ROOT__.'/tpl/view_hdr.tpl');
@@ -166,6 +211,8 @@ function build_nav($menu=0) {
 	echo "<table width='100%' class='report'>\n";
 	echo "<tr><td width='30%' style='{border: solid 1px; vertical-align: top}'>\n";
 	echo "<table width='100%'>\n";
+	
+	// This menu only has three levels
 	$results1=get_menus(1);
 	$results2=get_menus(2);
 	$results3=get_menus(3);
@@ -173,58 +220,73 @@ function build_nav($menu=0) {
 	//Does the menu selected have any other reports?
 	
 	$top=get_parent($menu);
+
 	if ( $level == 1 ) {
 		foreach( $results1 as $key => $value ) {
-			echo "<tr><td colspan='3'><a href='report_view.php?_menu=".$value['id']."'>$key</td></tr>\n";
+			echo "<tr><td colspan='3'><a href='report_view.php?_menu=";
+			if ( has_child($value['id']) ) { 
+				echo $value['id']."'>+ $key</td></tr>\n";
+			}
+			else {
+				echo $value['id']."'>$key</td></tr>\n";
+			}
 		}
 	}
 	elseif ( $level == 2 ) {
 		foreach( $results1 as $key => $value ) {
-			//if ( $value['parent'] == 0 && $value['id'] == $menu ) {
-			//	echo "<tr><td colspan='3'><a href='report_view.php'>$key</td></tr>\n";
-			//}
-			//else {
-				echo "<tr><td colspan='3'><a href='report_view.php?_menu=".$value['id']."'>$key</td></tr>\n";
-			//}
+			echo "<tr><td colspan='3'><a href='report_view.php?_menu=";
+			if ( has_child($value['id']) && $value['id'] !=  $menu ) { 
+				echo $value['id']."'>+ $key</td></tr>\n";
+			}
+			elseif ( has_child($value['id']) && $value['id'] ==  $menu ) { 
+				echo $value['id']."'>o $key</td></tr>\n";
+			}
+			else {
+				echo $value['id']."'>$key</td></tr>\n";
+			}
 			foreach ( $results2 as $key2 => $value2 ) {
-				if ( $value2['parent'] == $value['id'] && $value['id'] == $menu ) {
+				// Check if this entry has a report if so, include the report in the URI
+				if ( has_child($value2['id']) && $value2['parent'] == $value['id'] && $value['id'] == $menu ) {
 					echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-					//for ($i=0; $i<$level; $i++) {
-					//	echo "&nbsp;&nbsp;";
-					//}
-					echo "<a href='report_view.php?_menu=".$value2['id']."'>$key2</td></tr>\n";
+					echo "<a href='report_view.php?_menu=".$value2['id']."'>+ $key2</td></tr>\n";
+				}
+				elseif ( $value2['parent'] == $value['id'] && $value['id'] == $menu ) {
+					echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
+					echo "<a href='report_view.php?_report=".get_report_from_menu($value2['id'])."'>$key2</td></tr>\n";
 				}
 			}
 		}
 	}
 	elseif ( $level == 3 ) {
 		foreach( $results1 as $key => $value ) {
-			//if ( $value['parent'] == 0 && $value['id'] == $top ) {
-			//	echo "<tr><td colspan='3'><a href='report_view.php'>$key</td></tr>\n";
-			//}
-			//else {
-				echo "<tr><td colspan='3'><a href='report_view.php?_menu=".$value['id']."'>$key</td></tr>\n";
-			//}
+			echo "<tr><td colspan='3'><a href='report_view.php?_menu=";
+			if ( has_child($value['id']) && get_parent($menu) == $value['id']  ) { 
+				echo $value['id']."'>o $key</td></tr>\n";
+			}
+			elseif ( has_child($value['id']) ) { 
+				echo $value['id']."'>+ $key</td></tr>\n";
+			}
+			else {
+				echo $value['id']."'>$key</td></tr>\n";
+			}
 			foreach ( $results2 as $key2 => $value2 ) {
-				if ( $value2['parent'] == $value['id'] && $value['id'] == $top ) {
+				if ( has_child($value2['id']) && $value2['parent'] == $value['id'] && $value['id'] == $top && $value2['id'] != $menu ) {
 					echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-					//for ($i=0; $i<$level; $i++) {
-					//echo "&nbsp;&nbsp;";
-					//}
-					echo "<a href='report_view.php?_menu=".$value2['id']."'>$key2</td></tr>\n";
+					echo "<a href='report_view.php?_menu=".$value2['id']."'>+ $key2</td></tr>\n";
+				}
+				elseif ( has_child($value2['id']) && $value2['parent'] == $value['id'] && $value['id'] == $top && $value2['id'] == $menu ) {
+					echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
+					echo "<a href='report_view.php?_menu=".$value2['id']."'>o $key2</td></tr>\n";
+				}
+				elseif ( $value2['parent'] == $value['id'] && $value['id'] == $top ) {
+					echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
+					echo "<a href='report_view.php?_report=".get_report_from_menu($value2['id'])."'>$key2</td></tr>\n";
 				}
 				foreach ( $results3 as $key3 => $value3 ) {
 					
-					if ( has_child($menu) == 0 ) {
-						break;
-					}
-
 					if ( $value3['parent'] == $value2['id'] && $value2['parent'] == $value['id'] && $value['id'] == $top ) {
 						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td>";
-						//for ($i=0; $i<$level; $i++) {
-						//echo "&nbsp;&nbsp;&nbsp;&nbsp;";
-						//}
-						echo "<a href='report_view.php?_menu=".$value3['id']."'>$key3</td></tr>\n";
+						echo "<a href='report_view.php?_report=".get_report_from_menu($value3['id'])."'>$key3</td></tr>\n";
 					}
 				}
 			}
@@ -233,14 +295,9 @@ function build_nav($menu=0) {
 		
 	echo "</table>\n";
 	echo "</td>\n";
-
-	// Report window
-	if ( $menu != 0 ) {
-		$report=get_report_from_menu($menu);
-	}
-
 	echo "<td width='70%' style='{border: solid 1px; vertical-align: top}'>";
 	echo "<table>\n";
+
 	if ( $report != '') {
 		echo "<tr><td><form action='report_run.php?_report=".$report."' method='get'>
 			      <input type='hidden' name='_report' value='".$report."'>
@@ -249,7 +306,7 @@ function build_nav($menu=0) {
 	}
 	echo "<tr><td>";
 	
-	if ( has_child($menu) == 0 ) {
+	if ( $report != '' )  {
 		//This means we have a report to show!!
 		show_report($report);
 	}

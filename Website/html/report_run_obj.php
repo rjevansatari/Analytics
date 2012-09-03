@@ -1,16 +1,13 @@
 <?php
-	namespace gchart;
 
 	ini_set('memory_limit', '128M');
 	ini_set("display_errors", "1");
 	error_reporting(E_ALL);
+
 	date_default_timezone_set('America/Los_Angeles');
 
 	define('__ROOT__', dirname(dirname(__FILE__))); 
 	define('__DEBUG__', TRUE);
-
-	//Google Chart API
-	require (__ROOT__.'/inc/gChartInit.php');
 
 	//HTML Table output
 	require_once 'HTML/Table.php';
@@ -21,130 +18,37 @@
 	//XML Parser
 	require_once 'XML/Unserializer.php';
 	
+	// Custom Report Class
+	require_once (__ROOT__.'/inc/Report_Class.php');
+
 	// Config
 	require_once (__ROOT__.'/inc/db.php');
 	require_once (__ROOT__.'/inc/config.php');
 	//require_once (__ROOT__.'/inc/report_class.php');
 
+
 	// If no parameters passed, set default report for testing
 	if ( !isset($_GET['_report']) ) {
 
-		$report_name="mobile_dau_by_date";
-		$parms=array('gameid' =>1, 'clientid' => 1, 'startdate' => '2012-08-01', 'enddate' => '2012-08-25');
-		//$report_name="mobile_retention_from_install_date";
-		//$parms=array('gameid' =>1, 'clientid' => 1, 'startdate' => "'2012-08-20'");
+		$report = new Report('mobile_dau_by_date',array('gameid' =>1, 'clientid' => 1, 'startdate' => '2012-08-01', 'enddate' => '2012-08-25'));
 	}
 	else {
-
-		$report_name=$_GET['_report'];
-		$parms=report_parms($_GET);
-		unset($parms['_report']);
+		$report = new Report($_GET['_report'], $_GET);
 	}
 
-	// Parse the report
-	$xml =new \XML_Unserializer();
-	$xml->setOption(XML_UNSERIALIZER_OPTION_ATTRIBUTES_PARSE, TRUE);
-	$xml->unserialize(__ROOT__ ."/reports/$report_name".".xml", TRUE);
-	if (\PEAR::isError($xml)) {
-                        die("ERROR: XML : Report Name: $report_name : MSG: " . $xml->getMessage());
-        }
-
-	$xml_result = $xml->getUnserializedData();
-	if (\PEAR::isError($xml_result)) {
-                        die("ERROR: XML : Report Name: $report_name : MSG: " . $xml_result->getMessage());
-        }  
-
+	// Connect to DB and set connection pointers
 	$db = db_connect();
-
-	process_report($xml_result, $parms, $report_name);
-
-function get_report_parms($xml, $report) {
-
-	//Number of date parms - we need to track this.
-
-	$dates=0;
-	if ( !isset($xml['parm']) ) { 
-		return FALSE;
-	}
-	else {
-		require_once(__ROOT__.'/tpl/parms_hdr.tpl');
-		$parms = $xml['parm'];
-		if ( isset($parms['0']) ) {
-
-			foreach ( $parms as $key => $value ) {
-				echo "<tr>";
-				process_report_parm($value, $dates);
-				echo "</tr>";
-				
-				
-			}
-		}
-		else {
-			echo "<tr>";
-			process_report_parm($parms, $dates);
-			echo "</tr>";
-		}
-		require_once(__ROOT__.'/tpl/parms_ftr.tpl');
-	}
-	return TRUE;
-}
+	$report->setDB($db); 
 
 
-function process_report_parm($parm, &$dates) {
-	
-	global $db;
-
-	if ( !isset($parm['name']) || !isset($parm['type']) ) {
-		return FALSE;
+	if ( $report->getNumberPassedParms() == 0 ) {
+		$report->parms->toHTML();
+		exit;
 	}
 
-	if ( $parm['type'] == "query" ) {
-		echo "<td>".$parm['text'].":</td><td>&nbsp;&nbsp;<select name='" . $parm['name'] ."' style='{border: solid 1px}'>\n"; 
-		if ( $result = run_sql($db, $parm['_content']) ) {
+	$report->toHTML();
 
-        		while ($row = $result[0]->fetch_assoc()) {
-				if ( isset($parm['default']) ) {
-					if ( $parm['default'] == $row[$parm['display']] ) {
-						echo "<option value='" . $row[$parm['value']] . "' select='selected'>" . $row[$parm['display']] . "</option>\n";
-					} 	
-				}
-				else {
-					echo "<option value='" . $row[$parm['value']] . "'>" . $row[$parm['display']] . "</option>\n";
-				}
-			}
-			echo "</select></td>\n";
-		}
-	}
-	elseif ( $parm['type'] == "select" ) {
-		echo "<td>".$parm['text'].":</td><td>&nbsp;&nbsp;<select name='" . $parm['name'] ."' style='{border: solid 1px}'>\n"; 
-		//Process option tags
-		if ( isset($parm['option']['0']) ) {
-			foreach ($parm['option'] as $option => $value) {
-				if ( $value['_content'] == $parm['default']) { 
-					echo "<option value='" . $value['value'] . "' select='selected'>" . $value['_content'] . "</option>\n";
-				}
-				else {
-					echo "<option value='" . $value['value'] . "'>" . $value['_content'] . "</option>\n";
-				}
-			}
-		}
-		else {
-			echo "<option value='" . $parm['value'] . "'>" . $parm['_content'] . "</option>\n";
-		}
-		echo "</select></td>\n";
-	}
-	elseif ( $parm['type'] == "date" ) {
-		$dates++;
-		//Process date parameters
-		echo "<td>".$parm['text'].":</td><td>&nbsp;&nbsp;";
-		echo "<input type='text' style='{border: solid 1px}' name='".$parm['name']."' id='cal1Date".$dates."' autocomplete='off' size='20' value='' /></td>\n";
-	}
-	else {
-		return FALSE;
-	}
-}
-
-function process_report($xml, $parms, $report_name) {
+function process_report($report, $xml) {
 
 	$report=array();
 	$sql=array();
@@ -152,11 +56,6 @@ function process_report($xml, $parms, $report_name) {
 	$format=array();
 	$result=array();
 
-	if ( count($parms) == 0 ) {
-		if ( get_report_parms($xml, $report_name) == TRUE ) {
-			exit;
-		}
-	} 
 
 	foreach ( $xml as $key => $value ) {
 		if ( $key == 'title' ) {

@@ -28,7 +28,7 @@
 </head>
 <body class="yui-skin-sam" >
 <div id="davdoc" class="yui-t7">
-<form class="formcent" name='parameters' action='report_run.php' method='get'>
+<form class="formcent" name='parameters' action='report_run_obj.php' method='get'>
 <input name="_report" value="<?php echo $this->getReportName(); ?>" type="hidden">
 <p>Please enter the following parameters:</p>
 <table class='parms' >

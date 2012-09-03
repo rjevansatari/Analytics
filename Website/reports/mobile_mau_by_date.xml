@@ -1,0 +1,51 @@
+<xml>
+<title>
+MAU By Date
+</title>
+<description>
+This report shows MAU by date for a selected game and or client for a specified date range.
+
+MAU is the number of unique users on a given date who have been active in the last 30 days. 
+
+</description>
+<query name="dau" title="MAU By Date">
+create temporary table tmp.dau engine=myisam
+as
+select stat_date, 
+user_id
+from star.s_user_day
+where game_id=$gameid
+and client_id=$clientid
+and stat_date between date_sub('$startdate', interval 29 day) and '$enddate'
+group by 1,2
+;
+
+create temporary table tmp.a_metrics
+as
+select d.date as stat_date,
+count(distinct user_id) as value 
+from tmp.dau a, lookups.d_date d
+where a.stat_date between date_sub(d.date,interval 29 day) and d.date
+group by 1
+;
+
+select stat_date as Date,
+value as MAU
+from tmp.a_metrics
+order by 1
+;
+
+</query>
+<parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
+	select distinct game_id, game_name
+	from lookups.l_flurry_game
+	order by 2
+</parm>
+<parm name="clientid" type="select" text ="Client" default="iPhone">
+	<option value="1">iPhone</option>
+	<option value="2">Android</option>
+</parm>
+<parm name="startdate" type="date" text="Start date"/>
+<parm name="enddate" type="date" text="End date"/>
+<column name="MAU" format="number"/>
+</xml>

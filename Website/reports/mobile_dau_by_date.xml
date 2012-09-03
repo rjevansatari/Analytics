@@ -16,6 +16,10 @@ This report shows the DAU by date for a selected game and or client for a specif
 	group by 1
 	order by 1
 </query>
+<chart query="dau" type="LineChart">
+<haxis name="Date" title=""/>
+<vaxis name="DAU" title=""/>
+</chart>
 <parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
 	select distinct game_id, game_name
 	from lookups.l_flurry_game
