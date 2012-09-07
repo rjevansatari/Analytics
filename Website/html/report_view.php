@@ -19,7 +19,6 @@
 	// Config
 	require_once (__ROOT__.'/inc/db.php');
 	require_once (__ROOT__.'/inc/config.php');
-	require_once (__ROOT__.'/inc/report_class.php');
 
 	$report='';
 	$menu=0;
@@ -209,7 +208,8 @@ function build_nav($report,$menu) {
         require_once(__ROOT__.'/tpl/view_hdr.tpl');
 
 	echo "<table width='100%' class='report'>\n";
-	echo "<tr><td width='30%' style='{border: solid 1px; vertical-align: top}'>\n";
+	echo "<tr><td width='2%'>&nbsp;</td>\n";
+	echo "<td width='15%' style='{border: solid 1px; vertical-align: top}'>\n";
 	echo "<table width='100%'>\n";
 	
 	// This menu only has three levels
@@ -295,16 +295,21 @@ function build_nav($report,$menu) {
 		
 	echo "</table>\n";
 	echo "</td>\n";
-	echo "<td width='70%' style='{border: solid 1px; vertical-align: top}'>";
+	echo "<td width='2%'>&nbsp;</td>\n";
+	echo "<td style='{border: solid 1px; vertical-align: top}'>";
 	echo "<table>\n";
 
 	if ( $report != '') {
-		echo "<tr><td><form action='report_run.php?_report=".$report."' method='get'>
-			      <input type='hidden' name='_report' value='".$report."'>
-			      <input type='submit' value='Run Report'>
-               	       </form><td><tr>";
+		echo "<tr><td width='10%'><form action='report_run.php?_report=".$report."' method='get'>
+<input type='hidden' name='_report' value='".$report."'>
+<input type='submit' value='Run'>
+</form>
+<td width='10%'><form action='report_log.php?_report=".$report."' method='get'>
+<input type='hidden' name='_report' value='".$report."'>
+<input type='submit' value='History'>
+</td><td></td><tr>";
 	}
-	echo "<tr><td>";
+	echo "<tr><td colspan='3'>";
 	
 	if ( $report != '' )  {
 		//This means we have a report to show!!
@@ -315,7 +320,7 @@ function build_nav($report,$menu) {
 	}
 	echo "</td></tr>";
 	echo "</table>";
-	echo "</td></tr>";
+	echo "</td><td width='2%'>&nbsp;</td></tr>\n";
 	echo "</table>\n";
         require_once(__ROOT__.'/tpl/view_ftr.tpl');
 }		

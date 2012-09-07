@@ -16,9 +16,10 @@ This report shows the DAU by date for a selected game and or client for a specif
 	group by 1
 	order by 1
 </query>
-<chart query="dau" type="LineChart">
-<haxis name="Date" title=""/>
-<vaxis name="DAU" title=""/>
+<chart query="dau" type="LineChart" title="DAU By Date" options="backgroundColor: {stroke: 'black', strokeWidth: 1}">
+<haxis options="{title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{baselineColor: 'black', title: 'DAU',   titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
 </chart>
 <parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
 	select distinct game_id, game_name

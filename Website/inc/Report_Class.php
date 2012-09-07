@@ -69,7 +69,7 @@ class ReportParameter {
 	        }
 
 		if ( $this->type == "query" ) {
-                	echo "<td>".$this->text.":</td><td>&nbsp;&nbsp;<select name='" . $this->name."' style='{border: solid 1px}'>\n";
+                	echo "<td>".$this->text.":</td><td><select name='" . $this->name."' style='{border: solid 1px}'>\n";
 			
                 	if ( $result = run_sql($this->db, $this->query) ) {
 
@@ -87,7 +87,7 @@ class ReportParameter {
                 	}
         	}
         	elseif ( $this->type == "select" ) {
-                	echo "<td>".$this->text.":</td><td>&nbsp;&nbsp;\n<select name='".$this->name."' style='{border: solid 1px}'>\n";
+                	echo "<td>".$this->text.":</td><td>\n<select name='".$this->name."' style='{border: solid 1px}'>\n";
                 	//Process option tags
 			
                 	if ( isset($this->option['0']) ) {
@@ -107,7 +107,7 @@ class ReportParameter {
        		 }
         	elseif ( $this->type == "date" ) {
                 	//Process date parameters
-                	echo "<td>".$this->text.":</td><td>&nbsp;&nbsp;";
+                	echo "<td>".$this->text.":</td><td>\n";
                 	echo "<input type='text' style='{border: solid 1px}' name='".$this->name."' id='cal1Date".$this->ndate."' autocomplete='off' size='20' value='' /></td>\n";
         	}
         	else {
@@ -210,7 +210,7 @@ class ReportParms
 
 	function toHTML() {
 
-		require_once(__ROOT__.'/tpl/parms_hdr_obj.tpl');
+		require_once(__ROOT__.'/tpl/parms_hdr.tpl');
 
 		$count=1;
 
@@ -438,33 +438,52 @@ class Chart extends Report
 	public $type;
 	public $query;
 	public $title;
+	public $haxis;
+	public $vaxis;
+	public $legend;
+	public $options;
 	public $div;
 	public $HTML;
 
 	function __construct($chart) {
 		foreach ( $chart as $key => $value ) {
-			if ( $key == 'name' ) {
+
+			switch(strtolower($key)) {
+			case 'name':
 				$this->name = $value;
-			}
-			elseif ( $key == 'title' ) {
-				$this->title = $value;
-			}
-			elseif ( $key == 'type' ) {
-				$this->type = $value;
-			}
-			elseif ( $key == 'query' ) {
+			break;
+			case 'query':
 				$this->query = $value;
+			break;
+			case 'title':
+				$this->title = $value;
+			break;
+			case 'type':
+				$this->type = $value;
+			break;
+			case 'options':
+				$this->options = $value;
+			break;
+			case 'haxis':
+				$this->haxis = $value['options'];
+			break;
+			case 'vaxis':
+				$this->vaxis = $value['options'];
+			break;
+			case 'legend':
+				$this->legend = $value['options'];
+			break;
 			}
 		}
 	}
 
-	function setData($result, $index) {
+	function setData($result) {
 		// Reset result pointer
 		mysqli_data_seek($result, 0);
 
-		$chartData="google.setOnLoadCallback(drawChart".$index.");\n";
-		$chartData.="function drawChart".$index."() {
-                    var data".$index." = google.visualization.arrayToDataTable([\n";
+		$chartData="google.setOnLoadCallback(drawChart".$this->query.");\n";
+		$chartData.="function drawChart".$this->query."() {
+                    var data".$this->query." = google.visualization.arrayToDataTable([\n";
 
 		$record=0;
 		while ($row = $result->fetch_assoc()) {
@@ -565,10 +584,14 @@ class Chart extends Report
 		$chartData.="\n]);\n";
 		$this->HTML=$chartData;
 		$this->HTML.="var options = {
-title: '".$this->title."'
+".$this->options.",
+title:  '".$this->title."',
+hAxis:  ".$this->haxis.",
+vAxis:  ".$this->vaxis.",
+legend: ".$this->legend."
 };\n";
-		$this->HTML.="var chart = new google.visualization.LineChart(document.getElementById('chart_div".$index."'));
-   chart.draw(data".$index.", options);
+		$this->HTML.="var chart = new google.visualization.".$this->type."(document.getElementById('chart_div".$this->query."'));
+   chart.draw(data".$this->query.", options);
 }\n";
 		
 
@@ -601,7 +624,7 @@ class Report
 	public $charts;
 	public $tables;
 	public $formats;
-	public $xml;
+	public $XML;
 	public $HTML;
 	public $title;
 	public $description;
@@ -619,29 +642,59 @@ class Report
         	if (\PEAR::isError($xml)) {
                         die("ERROR: XML : Report Name: ".$this->reportName." : MSG: " . $xml->getMessage());
         	}
-		$this->xml=$xml->getUnserializedData();
+
+		$this->XML=$xml->getUnserializedData();
+
+        	if (\PEAR::isError($xml)) {
+                        die("ERROR: XML : Report Name: ".$this->reportName." : MSG: " . $xml->getMessage());
+        	}
 	
 		// Check if it has a query	
-		if ( !isset($this->xml['query']) ) { 
+		if ( !isset($this->XML['query']) ) { 
                         die("ERROR: XML : Report Name: ".$this->reportName." : MSG: This report has no query");
 		}
 		else {
-			foreach ( $this->xml as $key => $value ) {
+			foreach ( $this->XML as $key => $value ) {
 				switch($key) {
 				case 'query':
-					$query = new Query($value);
-					$query->setreportName($name);
+					if ( isset($value[0]) ) {
+						foreach ( $value as $index => $query ) {
 
-					$table = new Table($value);
-					$table->csv=$this->csv;
-					$table->reportName=$this->reportName;
+							$q = new Query($query);
+							$q->setreportName($name);
 
-					$this->queries[$query->name] = $query;
-					$this->tables[$table->name] = $table;
+							$t = new Table($query);
+							$t->csv=$this->csv;
+							$t->reportName=$this->reportName;
+
+							$this->queries[$q->name] = $q;
+							$this->tables[$t->name] = $t;
+						}
+					}
+					else {
+						$q = new Query($value);
+						$q->setreportName($name);
+
+						$t = new Table($value);
+						$t->csv=$this->csv;
+						$t->reportName=$this->reportName;
+
+						$this->queries[$q->name] = $q;
+						$this->tables[$t->name] = $t;
+
+					}
 				break;
 				case 'chart':
-					$chart = new Chart($value);
-					$this->charts[$chart->query] = $chart;
+					if ( isset($value[0]) ) {
+						foreach ( $value as $index => $chart ) {
+							$c = new Chart($chart);
+							$this->charts[$chart->query] = $c;
+						}
+					}
+					else {
+						$c = new Chart($value);
+						$this->charts[$c->query] = $c;
+					}
 				break;
 				case 'title':
 					$this->title=$value;
@@ -662,7 +715,7 @@ class Report
 					}
 				break;
 				case 'parm':
-					$this->parms = new ReportParms($this->xml['parm']);
+					$this->parms = new ReportParms($this->XML['parm']);
 					$this->parms->setreportName($name);
 				break;
 				}
@@ -673,8 +726,10 @@ class Report
 			$value->formats=$this->formats;
 		}
 
-		foreach ( $this->charts as $key => $value ) {
-			$value->formats=$this->formats;
+		if ( isset($this->charts) ) {
+			foreach ( $this->charts as $key => $value ) {
+				$value->formats=$this->formats;
+			}
 		}
 
 
@@ -712,11 +767,11 @@ class Report
 	}
 
 	function setHeader() {
-		require_once(__ROOT__.'/tpl/report_hdr_obj.tpl');
+		require_once(__ROOT__.'/tpl/report_hdr.tpl');
 	}
 
 	function setFooter() {
-		require_once(__ROOT__.'/tpl/report_ftr_obj.tpl');
+		require_once(__ROOT__.'/tpl/report_ftr.tpl');
 	}
 
 	function formatValue($format, $value)
@@ -756,7 +811,9 @@ class Report
 
 			foreach ( $results as $index => $result ) {
                                 if ( $result ) {
-					$this->charts[$query->name]->setData($result, $index+1);
+					if ( isset($this->charts[$query->name]) ) {
+						$this->charts[$query->name]->setData($result);
+					}
 					$this->tables[$query->name]->setData($result);
                                 }
                         }
@@ -764,21 +821,46 @@ class Report
 
 		// Now set all of the HTML
 		$this->setHeader();
-	
+
+		// Chart stuff has to appear in the HEAD sectioin
 		foreach ( $this->charts as $name => $chart ) {
 			$this->HTML.=$chart->HTML;
 		}
 		$this->HTML.="</script>\n</head>\n";
-		$count=1;
-		foreach ( $this->charts as $name => $chart ) {
-			$this->HTML.="<div id='chart_div".$count."' style='width: 900px; height: 600px;'></div>\n";
-			$count++;
-		}
-		
+
+		// Main body - Report info
+	        $this->HTML.="<body class='report'>\n";
+	        $this->HTML.="<h1>$this->title</h1>\n";
+	        $this->HTML.="<p>".str_replace("\n","<br>",$this->description)."</p>\n";
+	        $this->HTML.="<h2>Report Name: $this->reportName</h2>\n";
+	       	$this->HTML.="<h3>Parameters Passed:</h3>\n";
+	        $this->HTML.="<table>\n";
+	        foreach ( $this->passedParms as $key => $value ) {
+	                $this->HTML.="<tr><td>$key</td><td>$value</td></tr>\n";
+	        }
+	        $this->HTML.="</table>\n";
+	        $this->HTML.="<br>\n";
+	        $this->HTML.="<form method='post' action='report_download.php'>\n";
+	        $this->HTML.="<input name='report' type='hidden' value='" . $this->csv . "'>\n";
+	        $this->HTML.="<input type='submit' value='Download CSV'>\n";
+	        $this->HTML.="</form>\n";
+
+		// Results
+		$this->HTML.="<table>\n";
 
 		foreach ( $this->tables as $name => $table ) {
+			$this->HTML.="<tr><td>\n";
 			$this->HTML.=$table->HTML;
+			$this->HTML.="</td>";
+
+			if ( isset($this->charts[$name]) ) {
+				$this->HTML.="<td style='{vertical-align: top}'><div id='chart_div".$name."' style='width: 900px; height: 600px;'></div></td></tr>\n";
+			}
+			else {
+				$this->HTML.="<td></td></tr>\n";
+			}
 		}
+		$this->HTML.="</table>\n";
 		echo $this->HTML;
 		$this->setFooter();
 	}

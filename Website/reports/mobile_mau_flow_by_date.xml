@@ -1,0 +1,161 @@
+<xml>
+<title>
+MAU Flow By Date
+</title>
+<description>
+This report shows the net MAU growth based on installs, reacts and quitters by date for a selected game and or client for a specified date range.
+
+o Quitters - users who have had no activity in a game for 30 days
+o Reacts - users who were quitters who now have activity
+o Installs - new users
+
+</description>
+<query name="MAU Flow By Date" title="MAU Flow By Date">
+drop table if exists tmp.dau;
+
+create temporary table tmp.dau(index(user_id), index(stat_date)) engine=MyIsam
+as
+select stat_date,
+user_id
+from star.s_user_day
+where game_id=22
+and client_id=1
+group by 1,2
+;
+
+drop table if exists tmp.dau_2;
+
+create temporary table tmp.dau_2(index(user_id), index(stat_date)) engine=MyIsam
+as
+select * from tmp.dau;
+
+-- Installs
+drop table if exists tmp.installs;
+
+create table tmp.installs(index(user_id), index(install_date)) engine=MyIsam
+as select user_id,
+min(stat_date) as install_date
+from tmp.dau
+group by 1
+having min(stat_date) between '2012-08-02' and '2012-08-31'
+;
+
+-- Reacts
+drop table if exists tmp.reacts;
+
+create table tmp.reacts(index(user_id), index(stat_date)) engine=MyIsam
+as
+select stat_date,
+user_id,
+max(prev_date) as prev_date
+from
+(
+select a.stat_date,
+a.user_id,
+b.stat_date as prev_date
+from tmp.dau a, tmp.dau_2 b
+where a.user_id=b.user_id
+and a.stat_date>b.stat_date
+and a.stat_date between '2012-08-02' and '2012-08-31'
+) a
+group by 1,2
+;
+
+
+drop table if exists tmp.last_date;
+
+create table tmp.last_date engine=MyIsam
+as
+select user_id,
+max(stat_date) as last_date
+from tmp.dau
+group by 1
+order by 1,2
+;
+
+drop table if exists tmp.quitters;
+
+create table tmp.quitters
+as
+select a.user_id,
+d.date as quit_date
+from tmp.last_date a, lookups.d_date d
+where datediff(d.date, last_date)=31
+and d.date between '2012-08-02' and '2012-08-31'
+group by 1,2
+;
+
+-- Agg Installs
+drop table if exists tmp.a_metrics;
+
+create table tmp.a_metrics engine=MyIsam
+as
+select 'install' as metric,
+install_date as stat_date,
+count(distinct user_id) as value
+from tmp.installs
+WHERE install_date between '2012-08-02' and '2012-08-31'
+
+group by 1,2
+;
+
+insert into tmp.a_metrics(metric, stat_date, value)
+select 'quitter' as metric,
+quit_date as stat_date,
+count(distinct user_id) as value
+from tmp.quitters
+where quit_date between '2012-08-02' and '2012-08-31'
+group by 1,2
+order by 1
+;
+
+insert into tmp.a_metrics(metric, stat_date, value)
+select 'react' as metric,
+stat_date,
+count(distinct user_id) as value
+from tmp.reacts
+where datediff(stat_date, prev_date) > 30
+and stat_date between '2012-08-02' and '2012-08-31'
+group by 1,2
+order by 2
+;
+
+insert into tmp.a_metrics(metric, stat_date, value)
+select 'mau' as metric,
+stat_date,
+count(distinct user_id) as value
+from tmp.dau a, lookups.d_date d
+where a.stat_date between date_sub(d.date,interval 29 day) and d.date
+and stat_date between '2012-08-02' and '2012-08-31'
+group by 1,2
+;
+
+select stat_date as Date,
+sum(case when metric='install' then value else 0 end) as Installs,
+sum(case when metric='mau' then value else 0 end) as Mau,
+sum(case when metric='react' then value else 0 end) as Reacts,
+sum(case when metric='quitter' then value else 0 end) as Quitters,
+sum(case when metric in ('install','react') then value else 0 end)-
+sum(case when metric='quitter' then value else 0 end) as "Net Growth"
+from tmp.a_metrics
+where stat_date between '2012-08-02' and '2012-08-31'
+group by 1
+;
+</query>
+<parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
+	select distinct game_id, game_name
+	from lookups.l_flurry_game
+	order by 2
+</parm>
+<parm name="clientid" type="select" text ="Client" default="iPhone">
+	<option value="1">iPhone</option>
+	<option value="2">Android</option>
+</parm>
+<parm name="startdate" type="date" text="Start date"/>
+<parm name="enddate" type="date" text="End date"/>
+<column name='installs' format='number'/>
+<column name='mau' format='number'/>
+<column name='reacts' format='number'/>
+<column name='quitters' format='number'/>
+
+</xml>

@@ -1,6 +1,6 @@
 <?php
 	ini_set('memory_limit', '512M');
-	date_default_timezone_set('America/Los_Angeles');
+	date_default_timezone_set('America/New_York');
 
 	//Set up debugging
 
