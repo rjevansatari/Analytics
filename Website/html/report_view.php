@@ -196,7 +196,7 @@ function build_nav($report,$menu) {
 	$sql = "SELECT * from reporting.navigation
 		ORDER BY level, name";
 
-	$result = run_sql($db, $sql);
+	//$result = run_sql($db, $sql);
 	$level = get_level($report, $menu);
 
 	if ( $report != '' ) {

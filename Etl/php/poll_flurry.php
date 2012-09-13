@@ -1,6 +1,6 @@
 <?php
 	ini_set('memory_limit', '512M');
-	date_default_timezone_set('America/New_York');
+	//date_default_timezone_set('America/New_York');
 
 	//Set up debugging
 
@@ -9,7 +9,7 @@
 	require_once 'inc/config.php';
 
 	//check options
-	$options = getopt("ds:e:f:r:k:g:c:o:");
+	$options = getopt("ds:e:f:r:k:g:c:o:u");
 	if ( array_key_exists('d',$options) ) {
 		$debug = Log::singleton('console');
 	}
@@ -126,7 +126,7 @@
 			   debugger("DEBUG : Got the report now.");
 			   sleep(60);
 			   $file=get_file($value['@reportUri'], $report_file);
-			   $rc=parse_file($file, $row['game_id'],$row['device_id']);
+			   $rc=parse_file($file, $row['game_id'],$row['device_id'], $options);
 			}
 			echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file parsing complete for $start_date to $end_date!\n";
 		}
@@ -146,7 +146,7 @@ function debugger($msg) {
    }
 }
 
-function parse_file($file, $game_id, $device_id) {
+function parse_file($file, $game_id, $device_id, $options) {
 
     global $start_date;
     global $end_date;
@@ -184,15 +184,15 @@ function parse_file($file, $game_id, $device_id) {
 			$str=substr($data,$user_start);
 		}
                 $user_count++;
-		parse_user($str, $game_id, $device_id);
+		parse_user($str, $game_id, $device_id, $options);
              	$user_start=$user_end;   
         }
-	echo "USERS Processed: $user_count users from $start_date to $end_date.\n";
+	echo "NOTE: ".date("Y-m-d H:i:s").": Processed $user_count users from $start_date to $end_date.\n";
     }
     return TRUE;
 }
 
-function parse_user($str, $game_id, $client_id) {
+function parse_user($str, $game_id, $client_id, $options) {
 
 	global $fh;
 
@@ -223,11 +223,14 @@ function parse_user($str, $game_id, $client_id) {
 		fwrite($fh, $record);
 
 		//EVENTS
-		foreach ($event as $key => $value) {
-			foreach ($value['parameters'] as $parameter_key => $parameter_value) {
-       		 		$record= "$game_id, $client_id,'EVENT','" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "','" . $value['event'] . "','" .
-				         $parameter_key . "','" . $parameter_value . "'\n";
-				fwrite($fh, $record);
+		if ( !isset($options['u']) ) { 
+		 
+			foreach ($event as $key => $value) {
+				foreach ($value['parameters'] as $parameter_key => $parameter_value) {
+       			 		$record= "$game_id, $client_id,'EVENT','" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "','" . $value['event'] . "','" .
+					         $parameter_key . "','" . $parameter_value . "'\n";
+					fwrite($fh, $record);
+				}
 			}
 		}
 		unset($datetime);

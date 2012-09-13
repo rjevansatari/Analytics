@@ -41,7 +41,6 @@
 	$db = db_connect();
 	$report->setDB($db); 
 
-
 	// If the report has no passed parms, get them
 	if ( $report->getNumberPassedParms() == 0 ) {
 		$report->parms->toHTML();

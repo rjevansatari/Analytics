@@ -16,10 +16,10 @@
     position:absolute;
     top: 50%;
     left: 50%;
-    width:400px;
+    width:500px;
     height:<?php echo $this->getHeight(); ?>px;
     margin-top: <?php echo $this->getTopMargin(); ?>px;   /*set to a negative number 1/2 of your height */
-    margin-left:-200px;                                           /*set to a negative number 1/2 of your width*/
+    margin-left:-250px;                                           /*set to a negative number 1/2 of your width*/
     border: 2px solid;
     background-color: silver;
     text-align: center;
@@ -28,8 +28,8 @@
 </head>
 <body class="yui-skin-sam" >
 <div id="davdoc" class="yui-t7">
-<form class="formcent" name='parameters' action='report_run.php' method='get'>
+<form class='formcent' name='parameters' action='report_run.php' method='get'>
 <input name="_report" value="<?php echo $this->getReportName(); ?>" type="hidden">
 <p>Please enter the following parameters:</p>
-<table class='parms' >
+<table style='{backgroud-color: silver}' width='500px' class='report' >
 <?php

@@ -178,11 +178,11 @@ class ReportParms
 	}
 
 	function getHeight() {
-		return $this->nparms*60;
+		return ($this->nparms*50)+75;
 	}
 
 	function getTopMargin() {
-		return -round($this->nparms*(60/2));
+		return -round((($this->nparms*50)+75)/2);
 	}
 
 	function getreportName() {
@@ -819,6 +819,9 @@ class Report
                         }
 		}
 
+		// Turn on output buffering
+		ob_start();
+	
 		// Now set all of the HTML
 		$this->setHeader();
 
@@ -863,6 +866,33 @@ class Report
 		$this->HTML.="</table>\n";
 		echo $this->HTML;
 		$this->setFooter();
+
+		//Store output buffer
+		$ob = ob_get_contents();
+		$this->reportLog($ob);
+
+		ob_end_flush();
+	}
+
+	function reportLog($html) {
+
+		// We store the HTML used for this page and save it for a day
+		$sql = "insert into reporting.report_log(report_name, report_ts, report_parms, report_html, report_sql, report_code)
+                                           values('".$this->reportName."',now(),'";
+		$i=0;
+		foreach ( $this->passedParms as $key => $value ) {
+			if ( $i>0 ) {
+				$sql.=",$key=$value";
+			}
+			else {
+				$sql.="$key=$value";
+			}
+			$i++;
+		}
+
+		$html=str_replace("'","\'", $html);
+		$sql.="','".$html."','',0);";
+		run_sql($this->db, $sql);
 	}
 
 	function setDB($db) {
@@ -870,6 +900,8 @@ class Report
 			$query->setDB($db);
 		}
 		$this->parms->setDB($db);
+
+		$this->db=$db;
 	}
 
 	function buildHTML($result) {
