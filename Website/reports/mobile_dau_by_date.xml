@@ -9,24 +9,29 @@ This report shows the DAU by date for a selected game and or client for a specif
 	select stat_date as Date,
 	sum(value) as DAU
 	from star.s_game_day
-	where game_id=$gameid
-	and client_id=$clientid
+	where case when '$gameid'='-2' then game_id else $gameid end = game_id
+	and case when '$clientid'='-2' then client_id else $clientid end = client_id
 	and stat_date between '$startdate' and '$enddate'
 	and metric='ActiveUsersByDay'
 	group by 1
 	order by 1
 </query>
-<chart query="dau" type="LineChart" title="DAU By Date" options="backgroundColor: {stroke: 'black', strokeWidth: 1}">
-<haxis options="{title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<chart query="dau" type="LineChart" title="DAU By Date" options="height:600, width: 800">
+<haxis options="{slantedText: true, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
 <vaxis options="{baselineColor: 'black', title: 'DAU',   titleTextStyle: {color: '#FF0000'}}"/>
 <legend options="{position: 'none'}"/>
+<column name="Date"/>
+<column name="DAU"/>
 </chart>
 <parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
 	select distinct game_id, game_name
 	from lookups.l_flurry_game
+	union
+	select -2, 'All Games'
 	order by 2
 </parm>
 <parm name="clientid" type="select" text ="Client" default="iPhone">
+	<option value="-2">All Clients</option>
 	<option value="1">iPhone</option>
 	<option value="2">Android</option>
 </parm>

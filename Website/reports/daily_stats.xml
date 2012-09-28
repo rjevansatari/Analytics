@@ -1,0 +1,297 @@
+<xml>
+<title>
+Atari Mobile Daily Stats Summary - $date
+</title>
+<description>
+</description>
+<query hidden="true" time="10" name="dailystats" title="Atari 30 Day Stats Trends">
+drop table if exists tmp.a_metrics;
+create table tmp.a_metrics engine=myisam
+as
+select stat_date,
+game_id, 
+client_id, 
+cast('dau' as char(8)) as metric,
+sum(value) as value
+from star.s_game_day
+where metric='ActiveUsersByDay'
+and stat_date between date_sub('$date', interval $days+7 day) and '$date'
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Installs
+insert into tmp.a_metrics
+select stat_date,
+game_id, 
+client_id, 
+'installs' as metrics,
+sum(value) as value
+from star.s_game_day
+where metric='NewUsers'
+and stat_date between date_sub('$date', interval $days+7 day) and '$date'
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#MAU
+create temporary table tmp.dau(index(stat_date, user_id)) engine=myisam
+as
+select game_id, client_id, stat_date, user_id
+from star.s_user_day
+where stat_date between date_sub('$date', interval $days+37 day) and '$date'
+group by 1,2,3,4
+;
+
+# 7 Day Averages
+insert into tmp.a_metrics
+select stat_date,
+game_id, 
+client_id, 
+'7dau' as metric,
+round(sum(value)/7.0) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 6 day) and d.date
+and d.date between date_sub('$date', interval $days day) and '$date'
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+insert into tmp.a_metrics
+select stat_date,
+game_id, 
+client_id, 
+'mau' as metric,
+sum(value) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 29 day) and d.date
+and d.date between date_sub('$date', interval $days+7 day) and '$date'
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+create temporary table tmp.revenue(index(stat_date, currency_code)) engine=myisam
+as
+select start_date as stat_date,
+currency_of_proceeds as currency_code,
+sum(units*net_revenue) as net_revenue
+from star.itunes_sales
+where start_date between date_sub('$date', interval $days+7 day) and '$date'
+group by 1,2
+;
+
+insert into tmp.a_metrics
+SELECT stat_date,
+-2,
+-2,
+'revenue' as metric,
+sum(net_revenue/case when fx_rate is null then 1 else fx_rate end) as value
+from tmp.revenue a
+left join
+lookups.l_fx_rate b
+on a.stat_date=b.fx_date
+and a.currency_code=b.currency_code
+where stat_date between date_sub('$date', interval $days+7 day) and '$date'
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+insert into tmp.a_metrics
+SELECT start_date as stat_date,
+-2,
+-2,
+'units' as metric,
+sum(case when net_revenue>0 then units else 0 end) as value
+from star.itunes_sales
+where start_date between date_sub('$date', interval $days+7 day) and '$date'
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+select stat_date as Date,
+sum(case when metric='dau' then value else 0 end) as DAU,
+sum(case when metric='installs' then value else 0 end) as Installs,
+sum(case when metric='mau' then value else 0 end) as MAU,
+100*sum(case when metric='7dau' then value else 0 end)/
+sum(case when metric='mau' then value else 0 end) as Engagement,
+sum(case when metric='revenue' then value else 0 end) as Revenue,
+sum(case when metric='units' then value else 0 end) as Units
+from tmp.a_metrics
+where stat_date between date_sub('$date', interval $days day) and '$date'
+group by 1
+order by 1
+;
+
+</query>
+<query time="10" name="summary" title="Daily Summary">
+select
+'DAU' as Metric,
+format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics
+where metric='dau'
+group by 1
+union
+select
+'Installs' as Metric,
+format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics
+where metric='installs'
+group by 1
+union
+select
+'MAU' as Metric,
+format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics
+where metric='mau'
+group by 1
+union
+select
+'Revenue' as Metric,
+concat('$',format(sum(case when stat_date='$date' then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+sum(case when stat_date='$date' then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics
+where metric='revenue'
+group by 1
+union
+select
+'Revenue/DAU' as Metric,
+concat('$',format(sum(case when metric='revenue' and stat_date='$date' then value else 0 end)/
+sum(case when metric='dau'     and stat_date='$date' then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub('$date', interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date='$date' then value else 0 end)/
+ sum(case when metric='dau'     and stat_date='$date' then value else 0 end))-100,2),'%') as 'DoD % Change',
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub('$date', interval 7 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date='$date' then value else 0 end)/
+ sum(case when metric='dau'     and stat_date='$date' then value else 0 end))-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics
+where metric in('revenue','dau')
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="game" title="Summary By Game">
+select
+game_name as 'Game',
+    sum(case when metric='dau' and stat_date='$date' then value else 0 end) as DAU,
+100*sum(case when metric='dau' and stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+    sum(case when metric='dau' and stat_date='$date' then value else 0 end)-100 as 'DAU DoD % Change',
+100*sum(case when metric='dau' and stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+    sum(case when metric='dau' and stat_date='$date' then value else 0 end)-100 as 'DAU WoW % Change',
+    sum(case when metric='installs' and stat_date='$date' then value else 0 end) as Installs,
+100*sum(case when metric='installs' and stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+    sum(case when metric='installs' and stat_date='$date' then value else 0 end)-100 as ' Installs DoD % Change',
+100*sum(case when metric='installs' and stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+    sum(case when metric='installs' and stat_date='$date' then value else 0 end)-100 as 'Installs WoW % Change',
+    sum(case when metric='mau' and stat_date='$date' then value else 0 end) as MAU,
+100*sum(case when metric='mau' and stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
+    sum(case when metric='mau' and stat_date='$date' then value else 0 end)-100 as 'MAU DoD % Change',
+100*sum(case when metric='mau' and stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
+    sum(case when metric='mau' and stat_date='$date' then value else 0 end)-100 as 'MAU WoW % Change'
+from tmp.a_metrics a, lookups.l_flurry_game g
+where a.metric in ('dau','installs', 'mau')
+and a.game_id=g.game_id
+and a.client_id=g.device_id
+group by 1
+having sum(case when metric='dau' and stat_date in ('$date', date_sub('$date', interval 1 day), date_sub('$date', interval 7 day)) then value else 0 end) > 0
+order by 2 desc
+</query>
+<batch/>
+<parm name="date" text="Date" type="date"/>
+<parm name="days" text="Number of Days From Today" type="edit"/>
+<column name="Date" format="date"/>
+<column name="DAU" format="number"/>
+<column name="Installs" format="number"/>
+<column name="MAU" format="number"/>
+<column name="Engagement" format="percent"/>
+<column name="Revenue" format="currency"/>
+<column name="Units" format="number"/>
+<chart width='33%' position="top" name="DAU" query="dailystats" type="LineChart" title="DAU 30 Day Trends">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+</chart>
+<chart width='33%' position="top" name="Installs" query="dailystats" type="LineChart" title="Install 30 Day Trends">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+</chart>
+<chart width='33%' position="top" name="MAU" query="dailystats" type="LineChart" title="MAU 30 Day Trends">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+</chart>
+<chart width='33%' break="true" position="top" name="Revenue" query="dailystats" type="LineChart" title="Revenue(iOS) 30 Day Trends">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+</chart>
+<chart width='33%' position="top" name="Units" query="dailystats" type="LineChart" title="Purchase (iOS) 30 Day Trends">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+</chart>
+<chart width='33%' position="top" name="Engagement" query="dailystats" type="LineChart" title="Engagement 30 Day Trends">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+</chart>
+<column name='DAU' format='number' />
+<column name='Installs' format='number' />
+<column name='MAU' format='number' />
+<column name='Engagement' format='percent' />
+<column name='DoD % Change' format='percent' />
+<column name='WoW % Change' format='percent' />
+<column name='DAU DoD % Change' format='percent' />
+<column name='DAU WoW % Change' format='percent' />
+<column name='Installs DoD % Change' format='percent' />
+<column name='Installs WoW % Change' format='percent' />
+<column name='MAU DoD % Change' format='percent' />
+<column name='MAU WoW % Change' format='percent' />
+<column name='Rev DoD % Change' format='percent' />
+<column name='Rev WoW % Change' format='percent' />
+<column name='Revenue' format='currency' />
+<column name='Revenue/DAU' format='currency' />
+</xml>

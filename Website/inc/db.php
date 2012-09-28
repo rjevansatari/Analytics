@@ -51,6 +51,7 @@ function run_sql($db, $sql) {
 		if ( $db->multi_query($sql) ) {
 
 			$results[] = $db->store_result();
+
 		   	while ($db->more_results()) {
 
 				$db->next_result();
@@ -71,6 +72,5 @@ function run_sql($db, $sql) {
 			die("ERROR: MySQL : SQL : " . str_replace("\n","<br>",$sql) . "<br>" . "ERROR: MSG: " . $db->error . "<br>");
 		}
 	}
-
 	return $results;
 }

@@ -110,6 +110,10 @@ class ReportParameter {
                 	echo "<td>".$this->text.":</td><td>\n";
                 	echo "<input type='text' style='{border: solid 1px}' name='".$this->name."' id='cal1Date".$this->ndate."' autocomplete='off' size='20' value='' /></td>\n";
         	}
+        	elseif ( $this->type == "edit" ) {
+                	echo "<td>".$this->text.":</td><td>\n";
+                	echo "<input type='text' style='{border: solid 1px}' name='".$this->name."' value='' /></td>\n";
+		}
         	else {
                 	return FALSE;
         	}
@@ -238,12 +242,12 @@ class QueryParms
 	protected $nparms;
 
 	function __construct($parms) {
+		$this->nparms = 0;
 		foreach ($parms as $key => $value) {
 			if ( $key != '_report' ) {
 				$this->parameters[] = new QueryParameter(array($key, $value));
 			}
 		}
-
 		$this->nparms = count($this->parameters);
 	}
 
@@ -259,7 +263,7 @@ class QueryParms
 		}
 	}
 
-	function nParms() {
+	function getNumberOfParms() {
 		return $this->nparms;
 	}
 }
@@ -269,6 +273,8 @@ class Query
 	public $parms;
 	public $name;
 	public $source;
+	public $type;
+	public $time;
 	protected $db;
 	protected $reportName;
 
@@ -279,6 +285,9 @@ class Query
 			}
 			elseif ( $key == 'title' ) {
 				$this->title = $value;
+			}
+			elseif ( $key == 'time' ) {
+				$this->time = $value;
 			}
 			elseif ( $key == '_content' ) {
 				$this->source = $value;
@@ -294,8 +303,8 @@ class Query
 		$this->db=$db;
 	}
 
-	function nParms() {
-		return $this->parms->nparms;
+	function getNumberOfParms() {
+		return $this->parms->getNumberOfParms();
 	}
 
 	function setParms($parms) {
@@ -305,10 +314,20 @@ class Query
 	function run() {
 		$sql = $this->source;
 
-		foreach ($this->parms->parameters as $index => $parameter) {
-	        	$sql=str_replace("$".$parameter->column, $parameter->value, $sql);
+		if ( $this->getNumberOfParms()>0 ) {	
+			foreach ($this->parms->parameters as $index => $parameter) {
+	        		$sql=str_replace("$".$parameter->column, $parameter->value, $sql);
+			}
 		}
-        	$result = run_sql($this->db, $sql);
+
+		if ( isset($this->time) ) {
+			set_time_limit($this->time*60);
+        		$result = run_sql($this->db, $sql);
+			set_time_limit(30);
+		}
+		else {
+        		$result = run_sql($this->db, $sql);
+		}
 
 		return $result;
 	}
@@ -318,15 +337,25 @@ class Table extends Report
 {
 	public $name;
 	public $title;
+	public $isHidden;
 	public $HTML;
 
 	function __construct($table) {
+
+		$this->isHidden = FALSE;
+
 		foreach ( $table as $key => $value ) {
 			if ( $key == 'name' ) {
 				$this->name = $value;
 			}
 			elseif ( $key == 'title' ) {
 				$this->title = $value;
+			}
+			elseif ( $key == 'hidden' ) {
+				// Should be only hidden
+				if ( $value == 'true' ) {
+					$this->isHidden = TRUE;
+				}
 			}
 		}
 	}
@@ -427,7 +456,13 @@ class Table extends Report
 		fclose($fh);
 	
 		// Get the HTML for the table
-		$this->HTML = $table->toHTML();
+		if ( $this->isHidden == FALSE ) { 
+			$this->HTML = $table->toHTML();
+		}
+		else {
+			$this->HTML = '';
+		}
+		
 	}
 }
 
@@ -435,6 +470,8 @@ class Chart extends Report
 {
 
 	public $name;
+	public $break;
+	public $position;
 	public $type;
 	public $query;
 	public $title;
@@ -442,10 +479,14 @@ class Chart extends Report
 	public $vaxis;
 	public $legend;
 	public $options;
+	public $height;
+	public $width;
+	public $columns;
 	public $div;
 	public $HTML;
 
 	function __construct($chart) {
+		$this->break = FALSE;
 		foreach ( $chart as $key => $value ) {
 
 			switch(strtolower($key)) {
@@ -461,6 +502,17 @@ class Chart extends Report
 			case 'type':
 				$this->type = $value;
 			break;
+			case 'position':
+				$this->position = $value;
+			break;
+			case 'width':
+				$this->width = str_replace("%","",$value);
+			break;
+			case 'break':
+				if ( $value == "true" ) {
+					$this->break = TRUE;
+				}
+			break;
 			case 'options':
 				$this->options = $value;
 			break;
@@ -473,6 +525,11 @@ class Chart extends Report
 			case 'legend':
 				$this->legend = $value['options'];
 			break;
+			case 'column':
+				foreach ( $value as $index => $info ) {
+					$this->columns[$info['name']] = TRUE ;
+				}
+			break;
 			}
 		}
 	}
@@ -481,9 +538,9 @@ class Chart extends Report
 		// Reset result pointer
 		mysqli_data_seek($result, 0);
 
-		$chartData="google.setOnLoadCallback(drawChart".$this->query.");\n";
-		$chartData.="function drawChart".$this->query."() {
-                    var data".$this->query." = google.visualization.arrayToDataTable([\n";
+		$chartData="google.setOnLoadCallback(drawChart".$this->name.");\n";
+		$chartData.="function drawChart".$this->name."() {
+                    var data".$this->name." = google.visualization.arrayToDataTable([\n";
 
 		$record=0;
 		while ($row = $result->fetch_assoc()) {
@@ -495,7 +552,7 @@ class Chart extends Report
 	
 				foreach ($row as $key => $value) {
 					$col++;
-					if ( isset($this->formats[strtolower($key)]) ) {
+					if ( isset($this->columns[$key]) && isset($this->formats[strtolower($key)]) ) {
 	
 						// If we have a format, check its type
 						if ( in_array($this->formats[strtolower($key)], array('string','date')) ) {
@@ -504,6 +561,14 @@ class Chart extends Report
 							}
 							else {
 								$chartData.=",'".$value."'";
+							}
+						}
+						elseif ( in_array($this->formats[strtolower($key)], array('date')) ) {
+							if ( $col == 1 ) { 
+								$chartData.="[new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
+							}
+							else {
+								$chartData.=", new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
 						}
 						else {
@@ -515,7 +580,7 @@ class Chart extends Report
 							}
 						}
 					}
-					else {
+					elseif ( isset($this->columns[$key]) )  {
 						// If not format, we assume its a number
 						if ( $col == 1 ) { 
 							$chartData.="[".$value;
@@ -531,10 +596,10 @@ class Chart extends Report
 				$col=0;
 				foreach ($row as $key => $value) {
 					$col++;
-					if ( $col == 1 ) {
+					if ( $col == 1 && isset($this->columns[$key]) ) {
 						$chartData.="['".ucfirst($key)."'";
 					}
-					else { 
+					elseif ( isset($this->columns[$key]) ) { 
 						$chartData.=",'".ucfirst($key)."'";
 					}
 				}
@@ -544,7 +609,7 @@ class Chart extends Report
 	
 				foreach ($row as $key => $value) {
 					$col++;
-					if ( isset($this->formats[strtolower($key)]) ) {
+					if ( isset($this->columns[$key]) && isset($this->formats[strtolower($key)]) ) {
 	
 						// If we have a format, check its type
 						if ( in_array($this->formats[strtolower($key)], array('string','date')) ) {
@@ -553,6 +618,14 @@ class Chart extends Report
 							}
 							else {
 								$chartData.=",'".$value."'";
+							}
+						}
+						elseif ( in_array($this->formats[strtolower($key)], array('date')) ) {
+							if ( $col == 1 ) { 
+								$chartData.="[new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
+							}
+							else {
+								$chartData.=", new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
 						}
 						else {
@@ -564,7 +637,7 @@ class Chart extends Report
 							}
 						}
 					}
-					else {
+					elseif ( isset($this->columns[$key]) )  {
 						// If not format, we assume its a number
 						if ( $col == 1 ) { 
 							$chartData.="[".$value;
@@ -583,15 +656,17 @@ class Chart extends Report
 
 		$chartData.="\n]);\n";
 		$this->HTML=$chartData;
-		$this->HTML.="var options = {
-".$this->options.",
-title:  '".$this->title."',
+		$this->HTML.="var options = {";
+		if ( isset($this->options) ) {
+			$this->HTML.=$this->options.",";
+		}
+		$this->HTML.="title:  '".$this->title."',
 hAxis:  ".$this->haxis.",
 vAxis:  ".$this->vaxis.",
 legend: ".$this->legend."
 };\n";
-		$this->HTML.="var chart = new google.visualization.".$this->type."(document.getElementById('chart_div".$this->query."'));
-   chart.draw(data".$this->query.", options);
+		$this->HTML.="var chart = new google.visualization.".$this->type."(document.getElementById('chart_div".$this->name."'));
+   chart.draw(data".$this->name.", options);
 }\n";
 		
 
@@ -626,6 +701,7 @@ class Report
 	public $formats;
 	public $XML;
 	public $HTML;
+	public $batch;
 	public $title;
 	public $description;
 	public $csv;
@@ -654,6 +730,7 @@ class Report
                         die("ERROR: XML : Report Name: ".$this->reportName." : MSG: This report has no query");
 		}
 		else {
+			$this->batch = FALSE;
 			foreach ( $this->XML as $key => $value ) {
 				switch($key) {
 				case 'query':
@@ -688,12 +765,12 @@ class Report
 					if ( isset($value[0]) ) {
 						foreach ( $value as $index => $chart ) {
 							$c = new Chart($chart);
-							$this->charts[$chart->query] = $c;
+							$this->charts[$c->name] = $c;
 						}
 					}
 					else {
 						$c = new Chart($value);
-						$this->charts[$c->query] = $c;
+						$this->charts[$c->name] = $c;
 					}
 				break;
 				case 'title':
@@ -717,6 +794,9 @@ class Report
 				case 'parm':
 					$this->parms = new ReportParms($this->XML['parm']);
 					$this->parms->setreportName($name);
+				break;
+				case 'batch':
+					$this->batch = TRUE;
 				break;
 				}
 			}
@@ -782,22 +862,47 @@ class Report
                 	return number_format($value);
                	break;
       		case 'percent':
-              		return number_format($value,2)."%";
+              		if (is_numeric($value)) { 
+				return number_format($value,2)."%";
+			}
+			else {
+				return $value;
+			}
       		break;
               	case 'percent(1)':
-              		return number_format($value,1)."%";
+              		if (is_numeric($value)) {
+				return number_format($value,1)."%";
+			}
+			else {
+				return $value;
+			}
               	break;
               	case 'percent(2)':
-                     	return number_format($value,2)."%";
+                     	if (is_numeric($value)) {
+				return number_format($value,2)."%";
+			}
+			else {
+				return $value;
+			}
               	break;
                	case 'percent(3)':
-                       	return number_format($value,3)."%";
+                       	if (is_numeric($value)) {
+				return number_format($value,3)."%";
+			}
+			else {
+				return $value;
+			}
                	break;
                	case 'decimal':
                        	return number_format($value,2,'.',',');
                	break;
                	case 'currency':
-                       	return "$".number_format($value,2,'.',',');
+                       	if (is_numeric($value)) {
+				return "$".number_format($value,2,'.',',');
+			}
+			else {
+				return $value;
+			}
                	break;
 		default:
 			return $value;
@@ -806,13 +911,26 @@ class Report
 
 	function toHTML() {
 
+		//Log that this job has started
+		$ts=date("Y-m-d H:i:s");
+
+		// Third parm is HTML, at this point we have none
+		$this->reportLog(4, $ts, '');
+
 		foreach ( $this->queries as $index => $query ) {
 			$results=$query->run();
 
 			foreach ( $results as $index => $result ) {
                                 if ( $result ) {
-					if ( isset($this->charts[$query->name]) ) {
-						$this->charts[$query->name]->setData($result);
+					// See if we have a chart that users this query
+					if ( isset($this->charts) ) { 
+						foreach ( $this->charts as $index => $chart ) {
+						
+							if ( $chart->query == $query->name ) {
+								// We have a chart that uses this query
+								$this->charts[$chart->name]->setData($result);
+							}
+						}
 					}
 					$this->tables[$query->name]->setData($result);
                                 }
@@ -826,72 +944,163 @@ class Report
 		$this->setHeader();
 
 		// Chart stuff has to appear in the HEAD sectioin
-		foreach ( $this->charts as $name => $chart ) {
-			$this->HTML.=$chart->HTML;
+		if ( isset($this->charts) ) {
+    			$this->HTML.="
+<!-- GOOGLE CHART DATA START -->
+<script type='text/javascript'>
+google.load('visualization', '1', {packages:['corechart']});\n";
+			foreach ( $this->charts as $name => $chart ) {
+				$this->HTML.=$chart->HTML;
+			}
 		}
-		$this->HTML.="</script>\n</head>\n";
+
+		$this->HTML.="</script>\n";
+		$this->HTML.="<!-- GOOGLE CHART DATA END -->\n";
+		$this->HTML.="</head>\n";
 
 		// Main body - Report info
 	        $this->HTML.="<body class='report'>\n";
-	        $this->HTML.="<h1>$this->title</h1>\n";
-	        $this->HTML.="<p>".str_replace("\n","<br>",$this->description)."</p>\n";
-	        $this->HTML.="<h2>Report Name: $this->reportName</h2>\n";
-	       	$this->HTML.="<h3>Parameters Passed:</h3>\n";
-	        $this->HTML.="<table>\n";
+
+		// In case we have any parms in the title
 	        foreach ( $this->passedParms as $key => $value ) {
-	                $this->HTML.="<tr><td>$key</td><td>$value</td></tr>\n";
+	        	$this->title=str_replace("$".$key, $value, $this->title);
 	        }
-	        $this->HTML.="</table>\n";
+	        $this->HTML.="<h1>$this->title</h1>\n";
+
+		if ( $this->batch == FALSE ) { 
+	        	$this->HTML.="<p>".str_replace("\n","<br>",$this->description)."</p>\n";
+	        	$this->HTML.="<h2>Report Name: $this->reportName</h2>\n";
+	       		$this->HTML.="<h3>Parameters Passed:</h3>\n";
+	        	$this->HTML.="<table class='report'>\n";
+	        	foreach ( $this->passedParms as $key => $value ) {
+	                	$this->HTML.="<tr><td>$key</td><td>$value</td></tr>\n";
+	        	}
+	        	$this->HTML.="</table>\n";
+	        	$this->HTML.="<br>\n";
+	        	$this->HTML.="<form method='post' action='report_download.php'>\n";
+	        	$this->HTML.="<input name='report' type='hidden' value='" . $this->csv . "'>\n";
+	        	$this->HTML.="<input type='submit' value='Download CSV'>\n";
+	        	$this->HTML.="</form>\n";
+		}
+		else {
 	        $this->HTML.="<br>\n";
-	        $this->HTML.="<form method='post' action='report_download.php'>\n";
-	        $this->HTML.="<input name='report' type='hidden' value='" . $this->csv . "'>\n";
-	        $this->HTML.="<input type='submit' value='Download CSV'>\n";
-	        $this->HTML.="</form>\n";
+		}
 
 		// Results
-		$this->HTML.="<table>\n";
 
-		foreach ( $this->tables as $name => $table ) {
-			$this->HTML.="<tr><td>\n";
-			$this->HTML.=$table->HTML;
-			$this->HTML.="</td>";
+		$found = FALSE;
 
-			if ( isset($this->charts[$name]) ) {
-				$this->HTML.="<td style='{vertical-align: top}'><div id='chart_div".$name."' style='width: 900px; height: 600px;'></div></td></tr>\n";
+		// Do we want our charts at the top?
+		if ( isset($this->charts) ) {
+			foreach ( $this->charts as $name => $chart ) {
+				if ( $chart->position == "top") {
+					if ( !$found ) {
+						$this->HTML.="<table id='charts'>\n<tr>\n";
+						$found = TRUE;
+					}
+					if ( $chart->break ) {
+						$this->HTML.="</tr>\n<tr>\n";
+					}
+					if ( isset($chart->width) ) {
+						$this->HTML.="<td style='{border: solid 1px black}' width='".$chart->width."%'><div id='chart_div".$chart->name."'></div></td>\n";
+					}
+					else {
+						$this->HTML.="<td style='{border: solid 1px black}'><div id='chart_div".$chart->name."'></div></td>\n";
+					}
+				}
 			}
-			else {
-				$this->HTML.="<td></td></tr>\n";
+			if ( $found ) {
+				// Finish off table
+				$this->HTML.="</tr></table>\n";
 			}
 		}
-		$this->HTML.="</table>\n";
+
+		$t_found = FALSE;
+
+		foreach ( $this->tables as $name => $table ) {
+			if ( !$table->isHidden ) {
+				if ( !$t_found ) {
+					$this->HTML.="<h1>".$table->title."</h1><br>\n";
+					$this->HTML.="<table class='report'>\n";
+					$this->HTML.="<tr><td class='report'>\n";
+					$this->HTML.=$table->HTML;
+					$this->HTML.="</td><td>&nbsp;</td>";
+					$t_found = TRUE;
+				}
+				else {
+					$this->HTML.="<tr><td class='report'>\n";
+					$this->HTML.="<h1>".$table->title."</h1>\n<br>\n";
+					$this->HTML.=$table->HTML;
+					$this->HTML.="</td><td>&nbsp;</td>";
+				}
+			}
+			
+			$c_found = FALSE;
+
+			if ( isset($this->charts) ) {
+				foreach ( $this->charts as $index => $chart ) {
+					if ( $chart->query == $name && $chart->position != "top") {
+						$this->HTML.="<td style='{border: solid 1px black}'><div id='chart_div".$chart->name."'></div></td></tr>\n";
+						$c_found = TRUE;
+					}
+				}
+			}
+		}
+		if ( $t_found ) {
+			$this->HTML.="</table>\n";
+		}
 		echo $this->HTML;
 		$this->setFooter();
 
 		//Store output buffer
 		$ob = ob_get_contents();
-		$this->reportLog($ob);
+		$this->reportLog(0,$ts, $ob);
 
 		ob_end_flush();
 	}
 
-	function reportLog($html) {
+	function reportLog($code, $ts, $html) {
 
 		// We store the HTML used for this page and save it for a day
-		$sql = "insert into reporting.report_log(report_name, report_ts, report_parms, report_html, report_sql, report_code)
-                                           values('".$this->reportName."',now(),'";
-		$i=0;
-		foreach ( $this->passedParms as $key => $value ) {
+
+		if ( $code == 4 ) {
+			$sql = "insert into reporting.report_log(report_name,
+				report_startts,
+				report_endts,
+				report_parms,
+				report_html,
+				report_sql,
+				report_code) 
+				values('".$this->reportName."','".$ts."',NULL,";
+			$i=0;
+			foreach ( $this->passedParms as $key => $value ) {
+				if ( $i>0 ) {
+					$sql.=",$key=$value";
+				}
+				else {
+					$sql.="'$key=$value";
+				}
+				$i++;
+			}
+			// This code is the start, so HTML should be empty
 			if ( $i>0 ) {
-				$sql.=",$key=$value";
+				$sql.="',";
 			}
 			else {
-				$sql.="$key=$value";
+				$sql.='NULL,';
 			}
-			$i++;
+			$sql.="NULL,NULL,$code);";
 		}
-
-		$html=str_replace("'","\'", $html);
-		$sql.="','".$html."','',0);";
+		elseif ( $code == 0 ) {
+			$now=date("Y-m-d H:i:s");
+			$html=str_replace("'","\'", $html);
+			$sql = "update reporting.report_log
+				set report_endts='".$now."',
+				    report_code=0,
+				    report_html='".$html."'
+				where report_startts='".$ts."';";
+			
+		}
 		run_sql($this->db, $sql);
 	}
 
@@ -899,7 +1108,9 @@ class Report
 		foreach ($this->queries as $index => $query ) {
 			$query->setDB($db);
 		}
-		$this->parms->setDB($db);
+		if ( isset($this->parms) ) {
+			$this->parms->setDB($db);
+		}
 
 		$this->db=$db;
 	}

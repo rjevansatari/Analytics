@@ -30,7 +30,8 @@
 	// If no parameters passed, set default report for testing
 	if ( !isset($_GET['_report']) ) {
 
-		$report = new Report('mobile_dau_by_date',array('gameid' =>1, 'clientid' => 1, 'startdate' => '2012-08-01', 'enddate' => '2012-08-25'));
+		//$report = new Report('mobile_dau_by_date',array('gameid' =>1, 'clientid' => 1, 'startdate' => '2012-08-01', 'enddate' => '2012-08-25'));
+		$report = new Report('daily_stats',array('days'=>3));
 	}
 	else {
 		// Create report and pass the parameters if any
@@ -43,8 +44,10 @@
 
 	// If the report has no passed parms, get them
 	if ( $report->getNumberPassedParms() == 0 ) {
-		$report->parms->toHTML();
-		exit;
+		if ( isset($report->parms) ) {
+			$report->parms->toHTML();
+			exit;
+		}
 	}
 
 	// Show the report results

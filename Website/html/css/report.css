@@ -1,4 +1,3 @@
-img { display: block; }
 #cal1Container {
     position: absolute;
     display: none;
@@ -21,10 +20,75 @@ table, #parms {
 
 td, #parms {
     padding: .5em;
+    text-align: left;
 }
 
-.report {
+
+table, #header {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: center;
+	vertical-align: top;
+    	table-layout: fixed;
+}
+
+td.header {
+	vertical-align: top;
+	border: solid 1px black;
+}
+
+.log {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: small;
+	font-weight: normal;
+	border: solid 1px black;
+}
+
+th.log {
+	font-weight: bold;
+}
+
+table.report {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: small;
+	font-weight: normal;
+}
+
+td.report {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: center;
+	vertical-align: top;
+	font-size: small;
+	font-weight: normal !important;
+}
+
+table.nav {
+	font-weight: bold;
+    	border-collapse: collapse;
+}
+td.nav {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	vertical-align: top;
+}
+th {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: center;
+	vertical-align: top;
+	font-weight: bold
+}
+h1 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: large;
+	font-weight: bold;
+}
+
+img.report {   
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+body.report {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	font-size: small;
 }
-	

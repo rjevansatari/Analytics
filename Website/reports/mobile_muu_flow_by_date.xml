@@ -1,17 +1,18 @@
 <xml>
 <title>
-MAU Flow By Date
+MUU Flow By Date
 </title>
 <description>
-This report shows the net MAU growth based on installs, reacts and quitters by date for a selected game and or client for a specified date range.
+This report shows the net MUU growth for Atari Mobile based on installs, reacts and quitters by date for a selected game and or client for a specified date range.
 
-o Quitters - users who have had no activity in a game for 30 days
+o Quitters - users who have had no activity on the mobile network for 30 days
 o Reacts - users who were quitters who now have activity
 o Installs - new users
 
-NOTE: Quitters are shown as negative to create the MAU Flow Chart. 
+NOTE: Quitters are shown as negative to create the MUU Flow Chart. 
+NOTE: This report only covers users across AGH, Breakout, Circus Atari, Centipede and Outlaw.
 </description>
-<query name="MAU" title="MAU Flow By Date">
+<query name="MUU" title="MUU Flow By Date">
 drop table if exists tmp.dau;
 
 create temporary table tmp.dau(index(user_id), index(stat_date)) engine=MyIsam
@@ -19,7 +20,6 @@ as
 select stat_date,
 user_id
 from star.s_user_day
-where game_id=$gameid
 and client_id=$clientid
 group by 1,2
 ;
@@ -122,7 +122,7 @@ order by 2
 ;
 
 insert into tmp.a_metrics(metric, stat_date, value)
-select 'mau' as metric,
+select 'muu' as metric,
 stat_date,
 count(distinct user_id) as value
 from tmp.dau a, lookups.d_date d
@@ -133,7 +133,7 @@ group by 1,2
 
 select stat_date as Date,
 sum(case when metric='install' then value else 0 end) as Installs,
-#sum(case when metric='mau' then value else 0 end) as Mau,
+#sum(case when metric='muu' then value else 0 end) as muu,
 sum(case when metric='react' then value else 0 end) as Reacts,
 -sum(case when metric='quitter' then value else 0 end) as Quitters,
 sum(case when metric in ('install','react') then value else 0 end)-
@@ -143,24 +143,18 @@ where stat_date between '$startdate' and '$enddate'
 group by 1
 ;
 </query>
-<parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
-	select distinct game_id, game_name
-	from lookups.l_flurry_game
-	order by 2
-</parm>
 <parm name="clientid" type="select" text ="Client" default="iPhone">
 	<option value="1">iPhone</option>
 	<option value="2">Android</option>
 </parm>
-<chart query="MAU" type="ComboChart" title="MAU Flow By Date" 
+<chart query="MUU" type="ComboChart" title="MUU Flow By Date" 
 options="height: 600,
 seriesType: 'bars',
 series: {0: {color: 'blue'} },
 series: {1: {color: 'navy'} },
 series: {2: {color: 'orange'} },
 series: {3: {type: 'line', color: 'black'}},
-isStacked: true,
-backgroundColor: {stroke: 'black', strokeWidth: 1}">
+isStacked: true">
 <haxis options="{title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
 <vaxis options="{title: 'Installs/Reacts/Quitters',  titleTextStyle: {color: '#FF0000'}}"/>
 <legend options="{position: 'bottom'}"/>
@@ -173,7 +167,7 @@ backgroundColor: {stroke: 'black', strokeWidth: 1}">
 <parm name="startdate" type="date" text="Start date"/>
 <parm name="enddate" type="date" text="End date"/>
 <column name='installs' format='number'/>
-<column name='mau' format='number'/>
+<column name='muu' format='number'/>
 <column name='reacts' format='number'/>
 <column name='quitters' format='number'/>
 <column name='date' format='date'/>

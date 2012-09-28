@@ -21,7 +21,7 @@
 	require_once (__ROOT__.'/inc/config.php');
 
 	// Include the report class
-	require_once (__ROOT__.'/inc/Report_Menu.php');
+	require_once (__ROOT__.'/inc/Report_Menu_Frame.php');
 
 	// These are default values if none passed
 	$report='';

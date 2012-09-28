@@ -37,12 +37,13 @@
 		$reportName = ($_GET['_report']);
 		if ( isset($_GET['cache']) ) {
 
-			$report_ts=$_GET['cache'];
+			$report_startts=$_GET['cache'];
 			$sql = "SELECT report_html from reporting.report_log
 				WHERE report_name='".$reportName."'
-				AND report_ts='".$report_ts."';";
+				AND report_startts='".$report_startts."';";
 
 			$result = run_sql($db, $sql);
+
 			while ($row = $result[0]->fetch_assoc()) {
 				echo $row['report_html'];
 				exit;
@@ -56,7 +57,7 @@
 
 	$sql = "SELECT * from reporting.report_log
 		WHERE report_name='".$reportName."'
-		ORDER by report_ts desc";	
+		ORDER by report_startts desc";	
 
 	$result = run_sql($db, $sql);
 
@@ -64,11 +65,7 @@
 
 	while ($row = $result[0]->fetch_assoc()) {
 
-		$report_ts=str_replace(":","_",$row['report_ts']);
-		$report_ts=str_replace("-","_",$report_ts);
-		$report_ts=str_replace(" ","_",$report_ts);
-
-		echo "<tr><td><a href='report_log.php?_report=".$reportName."&cache=".$row['report_ts']."'>".$report_ts."</td></tr>\n";
+		echo "<tr><td><a href='report_log.php?_report=".$reportName."&cache=".$row['report_startts']."'>".$row['report_startts']."</td></tr>\n";
 	}
 
 	echo "</table>\n";
