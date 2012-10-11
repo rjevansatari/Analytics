@@ -7,7 +7,7 @@
     <script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/utilities/utilities.js"></script> 
     <script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/calendar/calendar-min.js"></script> 
     <script type="text/javascript" src="http://developer.yahoo.com/yui/assets/dpSyntaxHighlighter.js"></script>
-    <script type="text/javascript" src="../js/cal.js"></script>
+    <script type="text/javascript" src="http://analytics.atari.com/js/cal.js"></script>
     <script type='text/javascript' src='https://www.google.com/jsapi'></script>
     <!-- GOOGLE CHART DATA --> 
 <?php
@@ -21,11 +21,12 @@
     <link rel="stylesheet" type="text/css" href="https://analytics.atari.com/css/report.css">
 </head>
 <body>
-<table style='{width:100%}' id='header'>
+<table style='{width:100%}' class='header'>
 <tr>
 <td style='{width:2%}'>&nbsp;</td>
 <td style='{width:18%}'>
 <a href="report_view.php"><img class='report' width='150' height='168' src='images/Atari_NoBadge_NoURL_RGB.jpg' alt='Atari Stats Portal'/></a>
+<br>
 </td>
 <td style='{width:2%}'>&nbsp;</td>
 <td style='{width:78%}'>&nbsp;</td>

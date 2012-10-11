@@ -190,18 +190,18 @@ class Menu {
 
 		$result = run_sql($this->db, $sql);
 
-		echo "\n<table class='log' width='100%'>\n";
+		echo "\n<table class='log' width='1000px'>\n";
 		echo "<tr>\n";
 		if ( $report == '' ) {
-			echo "<th class='log' width='15%' style='{background-color: silver}'>&nbsp;Report Name</th>\n";
-			echo "<th class='log' width='20%' style='{background-color: silver}'>&nbsp;Time Stamp</th>\n";
-			echo "<th class='log' width='50%' style='{background-color: silver}'>&nbsp;Parameters</th>\n";
-			echo "<th class='log' width='15%' style='{background-color: silver}'>&nbsp;Status</th>\n";
+			echo "<th width='15%'>&nbsp;Report Name</th>\n";
+			echo "<th width='20%'>&nbsp;Time Stamp</th>\n";
+			echo "<th width='50%'>&nbsp;Parameters</th>\n";
+			echo "<th width='15%'>&nbsp;Status</th>\n";
 		}
 		else {
-			echo "<th class='log' width='20%' style='{background-color: silver}'>&nbsp;Time Stamp</th>\n";
-			echo "<th class='log' width='65%' style='{background-color: silver}'>&nbsp;Parameters</th>\n";
-			echo "<th class='log' width='15%' style='{background-color: silver}'>&nbsp;Status</th>\n";
+			echo "<th width='20%'>&nbsp;Time Stamp</th>\n";
+			echo "<th width='65%'>&nbsp;Parameters</th>\n";
+			echo "<th width='15%'>&nbsp;Status</th>\n";
 			echo "</tr>\n";
 		}
 
@@ -210,19 +210,19 @@ class Menu {
 			echo "<tr>";
 
 			if ( $report == '' ) {
-				echo "<td class='log' style='{vertical-align: top}'><a href='report_view.php?_report=".$row['report_name']."'>".$row['report_name']."</a></td>\n";
-				echo "<td class='log' style='{vertical-align: top}'><a href='report_log.php?_report=".$row['report_name']."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
+				echo "<td><a href='report_view.php?_report=".$row['report_name']."'>".$row['report_name']."</a></td>\n";
+				echo "<td><a href='report_log.php?_report=".$row['report_name']."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
 			}
 			else {
-				echo "<td class='log' style='{vertical-align: top}'><a href='report_log.php?_report=".$report."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
+				echo "<td><a href='report_log.php?_report=".$report."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
 			}
 
-			echo "<td class='log' style='{vertical-align: top}'>".$row['report_parms']."</td>\n";
+			echo "<td>".$row['report_parms']."</td>\n";
 			if ( $row['report_code'] == 0 ) { 
-				echo "<td class='log' style='{background-color: yellowgreen; vertical-align: top}'>Complete</td></tr>\n";
+				echo "<td style='{background-color: yellowgreen; vertical-align: top}'>Complete</td></tr>\n";
 			}
 			elseif ( $row['report_code'] == 4 ) {
-				echo "<td class='log' style='background-color: orange; {vertical-align: top}'>Running</td></tr>\n";
+				echo "<td style='background-color: orange; {vertical-align: top}'>Running</td></tr>\n";
 			}
 		}
 
@@ -236,7 +236,7 @@ class Menu {
 			WHERE report_name='daily_stats'
 			AND report_code=0
 			AND report_endts IS NOT NULL
-			ORDER BY report_startts DESC
+			ORDER BY report_endts DESC
 			LIMIT 1";
 
 		$result = run_sql($this->db, $sql);
@@ -260,7 +260,9 @@ class Menu {
 
 
 	        //Read through the result to create the navigation
-		$dailyStats=$this->getDailyStats();
+		if ( $this->reportName == '') {
+			$dailyStats=$this->getDailyStats();
+		}
 		require_once(__ROOT__.'/tpl/view_hdr.tpl');
 
 		echo "<tr><td style='{width:2%}'>&nbsp;</td>\n";
@@ -336,10 +338,10 @@ class Menu {
 		echo "</table>\n";
 		echo "</td>\n";
 		echo "<td style='{width:2%}'>&nbsp;</td>\n";
-		echo "<td class='report' style='{width:78%}'>\n";
+		echo "<td style='{width:78%}'>\n";
 	
 		if ( $this->reportName != '') {
-			echo "<table class='report' id='report'>\n";
+			echo "<table>\n";
 			//echo "<tr><td style='{width:10%}'>\n";
 			echo "<tr><td>\n";
 			echo "<form action='report_run.php?_report=".$this->reportName."' method='get'>";

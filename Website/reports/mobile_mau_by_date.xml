@@ -9,7 +9,7 @@ MAU is the number of unique users on a given date who have been active in the la
 
 </description>
 <query name="mau" title="MAU By Date">
-create temporary table tmp.dau(index(stat_date, user_id) engine=myisam
+create temporary table tmp.dau(index(stat_date, user_id)) engine=myisam
 as
 select stat_date, 
 game_id,

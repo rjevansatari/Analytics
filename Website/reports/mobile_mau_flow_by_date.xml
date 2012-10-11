@@ -154,6 +154,7 @@ group by 1
 </parm>
 <chart query="MAU" type="ComboChart" title="MAU Flow By Date" 
 options="height: 600,
+width:800,
 seriesType: 'bars',
 series: {0: {color: 'blue'} },
 series: {1: {color: 'navy'} },

@@ -20,8 +20,8 @@
 <frameset rows="20%, 80%">
         <frame src="/menu_hdr.html" name="title" scrolling="no" frameborder="0" />
         <frameset cols="20%, 80%">
-                <frame src="/report_menu.php" name="menu" scrolling="no" frameborder="1" />
-                <frame src="/daily_stats.html" name="main" scrolling="yes" frameborder="0" />
+                <frame src="<?php echo $navHtml; ?>" name="menu" scrolling="no" frameborder="1" />
+                <frame src="<?php echo $reportHtml; ?>" name="main" scrolling="yes" frameborder="0" />
         </frameset>
         <noframes>
                 <body>

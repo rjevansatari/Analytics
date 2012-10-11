@@ -1,0 +1,550 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/report.css">
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type='text/javascript' src='https://www.google.com/jsapi'></script>
+<script type='text/javascript'>
+google.load('visualization', '1', {packages:['corechart']});
+google.setOnLoadCallback(drawChartDAU);
+function drawChartDAU() {
+                    var dataDAU = google.visualization.arrayToDataTable([
+['Date','DAU'],
+['2012-08-23',56270],
+['2012-08-24',62342],
+['2012-08-25',83099],
+['2012-08-26',89589],
+['2012-08-27',71879],
+['2012-08-28',68955],
+['2012-08-29',62418],
+['2012-08-30',67291],
+['2012-08-31',159916],
+['2012-09-01',261063],
+['2012-09-02',215869],
+['2012-09-03',160321],
+['2012-09-04',109619],
+['2012-09-05',89958],
+['2012-09-06',78170],
+['2012-09-07',80488],
+['2012-09-08',88457],
+['2012-09-09',80198],
+['2012-09-10',58998],
+['2012-09-11',57194],
+['2012-09-12',55635],
+['2012-09-13',55213],
+['2012-09-14',62123],
+['2012-09-15',72779],
+['2012-09-16',70159],
+['2012-09-17',52754],
+['2012-09-18',50983],
+['2012-09-19',50494],
+['2012-09-20',52145],
+['2012-09-21',60646],
+['2012-09-22',72456]
+]);
+var options = {backgroundColor: {stroke: 'gray', strokeWidth: 2},title:  'DAU Trends',
+hAxis:  {showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}},
+vAxis:  {minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}},
+legend: {position: 'none'}
+};
+var chart = new google.visualization.LineChart(document.getElementById('chart_divDAU'));
+   chart.draw(dataDAU, options);
+}
+google.setOnLoadCallback(drawChartInstalls);
+function drawChartInstalls() {
+                    var dataInstalls = google.visualization.arrayToDataTable([
+['Date','Installs'],
+['2012-08-23',8709],
+['2012-08-24',11360],
+['2012-08-25',25380],
+['2012-08-26',25257],
+['2012-08-27',13777],
+['2012-08-28',14590],
+['2012-08-29',11322],
+['2012-08-30',14702],
+['2012-08-31',79468],
+['2012-09-01',149113],
+['2012-09-02',109444],
+['2012-09-03',66949],
+['2012-09-04',34108],
+['2012-09-05',21614],
+['2012-09-06',15608],
+['2012-09-07',13388],
+['2012-09-08',13872],
+['2012-09-09',12094],
+['2012-09-10',8328],
+['2012-09-11',7913],
+['2012-09-12',7627],
+['2012-09-13',7912],
+['2012-09-14',8568],
+['2012-09-15',10241],
+['2012-09-16',10084],
+['2012-09-17',7246],
+['2012-09-18',7068],
+['2012-09-19',6901],
+['2012-09-20',7764],
+['2012-09-21',10168],
+['2012-09-22',12696]
+]);
+var options = {backgroundColor: {stroke: 'gray', strokeWidth: 2},title:  'Install Trends',
+hAxis:  {showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}},
+vAxis:  {minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}},
+legend: {position: 'none'}
+};
+var chart = new google.visualization.LineChart(document.getElementById('chart_divInstalls'));
+   chart.draw(dataInstalls, options);
+}
+google.setOnLoadCallback(drawChartMAU);
+function drawChartMAU() {
+                    var dataMAU = google.visualization.arrayToDataTable([
+['Date','MAU'],
+['2012-08-23',865117],
+['2012-08-24',855120],
+['2012-08-25',857070],
+['2012-08-26',862685],
+['2012-08-27',854418],
+['2012-08-28',845802],
+['2012-08-29',843832],
+['2012-08-30',839417],
+['2012-08-31',891917],
+['2012-09-01',1014802],
+['2012-09-02',1136376],
+['2012-09-03',1197629],
+['2012-09-04',1218654],
+['2012-09-05',1228684],
+['2012-09-06',1231755],
+['2012-09-07',1230528],
+['2012-09-08',1225703],
+['2012-09-09',1215208],
+['2012-09-10',1200380],
+['2012-09-11',1186674],
+['2012-09-12',1180470],
+['2012-09-13',1176266],
+['2012-09-14',1172128],
+['2012-09-15',1173619],
+['2012-09-16',1173803],
+['2012-09-17',1161539],
+['2012-09-18',1148747],
+['2012-09-19',1141323],
+['2012-09-20',1143797],
+['2012-09-21',1146161],
+['2012-09-22',1153011]
+]);
+var options = {backgroundColor: {stroke: 'gray', strokeWidth: 2},title:  'MAU Trends',
+hAxis:  {showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}},
+vAxis:  {minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}},
+legend: {position: 'none'}
+};
+var chart = new google.visualization.LineChart(document.getElementById('chart_divMAU'));
+   chart.draw(dataMAU, options);
+}
+google.setOnLoadCallback(drawChartRevenue);
+function drawChartRevenue() {
+                    var dataRevenue = google.visualization.arrayToDataTable([
+['Date','Revenue'],
+['2012-08-23',837],
+['2012-08-24',962],
+['2012-08-25',1446],
+['2012-08-26',1415],
+['2012-08-27',1192],
+['2012-08-28',1074],
+['2012-08-29',1012],
+['2012-08-30',1306],
+['2012-08-31',565],
+['2012-09-01',846],
+['2012-09-02',714],
+['2012-09-03',448],
+['2012-09-04',433],
+['2012-09-05',1664],
+['2012-09-06',1593],
+['2012-09-07',1553],
+['2012-09-08',1820],
+['2012-09-09',1743],
+['2012-09-10',995],
+['2012-09-11',863],
+['2012-09-12',871],
+['2012-09-13',928],
+['2012-09-14',1016],
+['2012-09-15',1446],
+['2012-09-16',1345],
+['2012-09-17',803],
+['2012-09-18',899],
+['2012-09-19',680],
+['2012-09-20',737],
+['2012-09-21',960],
+['2012-09-22',1383]
+]);
+var options = {backgroundColor: {stroke: 'gray', strokeWidth: 2},title:  'Revenue Trends',
+hAxis:  {showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}},
+vAxis:  {minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}},
+legend: {position: 'none'}
+};
+var chart = new google.visualization.LineChart(document.getElementById('chart_divRevenue'));
+   chart.draw(dataRevenue, options);
+}
+google.setOnLoadCallback(drawChartUnits);
+function drawChartUnits() {
+                    var dataUnits = google.visualization.arrayToDataTable([
+['Date','Units'],
+['2012-08-23',387],
+['2012-08-24',425],
+['2012-08-25',588],
+['2012-08-26',644],
+['2012-08-27',558],
+['2012-08-28',488],
+['2012-08-29',467],
+['2012-08-30',689],
+['2012-08-31',444],
+['2012-09-01',535],
+['2012-09-02',547],
+['2012-09-03',447],
+['2012-09-04',358],
+['2012-09-05',810],
+['2012-09-06',775],
+['2012-09-07',741],
+['2012-09-08',918],
+['2012-09-09',814],
+['2012-09-10',521],
+['2012-09-11',510],
+['2012-09-12',478],
+['2012-09-13',507],
+['2012-09-14',546],
+['2012-09-15',773],
+['2012-09-16',731],
+['2012-09-17',484],
+['2012-09-18',529],
+['2012-09-19',403],
+['2012-09-20',400],
+['2012-09-21',533],
+['2012-09-22',768]
+]);
+var options = {backgroundColor: {stroke: 'gray', strokeWidth: 2},title:  'Unit Trends',
+hAxis:  {showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}},
+vAxis:  {minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}},
+legend: {position: 'none'}
+};
+var chart = new google.visualization.LineChart(document.getElementById('chart_divUnits'));
+   chart.draw(dataUnits, options);
+}
+google.setOnLoadCallback(drawChartEngagement);
+function drawChartEngagement() {
+                    var dataEngagement = google.visualization.arrayToDataTable([
+['Date','Engagement'],
+['2012-08-23',3.7379],
+['2012-08-24',3.7125],
+['2012-08-25',3.7815],
+['2012-08-26',3.9283],
+['2012-08-27',4.0154],
+['2012-08-28',4.2556],
+['2012-08-29',4.4094],
+['2012-08-30',4.4645],
+['2012-08-31',5.1995],
+['2012-09-01',6.3933],
+['2012-09-02',7.1939],
+['2012-09-03',7.6092],
+['2012-09-04',7.7742],
+['2012-09-05',7.8202],
+['2012-09-06',7.8499],
+['2012-09-07',7.4058],
+['2012-09-08',6.2132],
+['2012-09-09',4.9341],
+['2012-09-10',4.0839],
+['2012-09-11',3.6574],
+['2012-09-12',3.3716],
+['2012-09-13',3.1894],
+['2012-09-14',3.0591],
+['2012-09-15',2.9285],
+['2012-09-16',2.8293],
+['2012-09-17',2.8114],
+['2012-09-18',2.8010],
+['2012-09-19',2.7845],
+['2012-09-20',2.7576],
+['2012-09-21',2.7470],
+['2012-09-22',2.7434]
+]);
+var options = {backgroundColor: {stroke: 'gray', strokeWidth: 2},title:  'Engagement Trends',
+hAxis:  {showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}},
+vAxis:  {minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}},
+legend: {position: 'none'}
+};
+var chart = new google.visualization.LineChart(document.getElementById('chart_divEngagement'));
+   chart.draw(dataEngagement, options);
+}
+</script>
+</head>
+<body class='report'>
+<h1>Atari Mobile Daily Stats Summary - 2012-09-22</h1>
+<br>
+<table id='charts'>
+<tr>
+<td class='report'><div width='33%' id='chart_divDAU'></div></td>
+<td class='report'><div width='33%' id='chart_divInstalls'></div></td>
+<td class='report'><div width='33%' id='chart_divMAU'></div></td>
+</tr>
+<tr>
+<td class='report'><div width='33%' id='chart_divRevenue'></div></td>
+<td class='report'><div width='33%' id='chart_divUnits'></div></td>
+<td class='report'><div width='33%' id='chart_divEngagement'></div></td>
+</tr></table>
+<table width='100%'>
+<tr><td class='report'>
+<h1>Daily Summary</h1>
+<table border="1" class="report">
+	<tr bgcolor="silver" align="center">
+		<th>#</th>
+		<th>Metric</th>
+		<th>Value</th>
+		<th>DoD % Change</th>
+		<th>WoW % Change</th>
+	</tr>
+	<tr align="right">
+		<td>1</td>
+		<td>DAU</td>
+		<td>72,456</td>
+		<td>-16.30%</td>
+		<td>0.45%</td>
+	</tr>
+	<tr align="right">
+		<td>2</td>
+		<td>Installs</td>
+		<td>12,696</td>
+		<td>-19.91%</td>
+		<td>-19.34%</td>
+	</tr>
+	<tr align="right">
+		<td>3</td>
+		<td>MAU</td>
+		<td>1,153,011</td>
+		<td>-0.59%</td>
+		<td>1.79%</td>
+	</tr>
+	<tr align="right">
+		<td>4</td>
+		<td>Revenue</td>
+		<td>$1,383.00</td>
+		<td>-30.59%</td>
+		<td>4.56%</td>
+	</tr>
+	<tr align="right">
+		<td>5</td>
+		<td>Revenue/DAU</td>
+		<td>$0.019</td>
+		<td>-17.07%</td>
+		<td>4.09%</td>
+	</tr>
+</table>
+</td><tr><td class='report'>
+<h1>Summary By Game</h1>
+<table border="1" class="report">
+	<tr bgcolor="silver" align="center">
+		<th>#</th>
+		<th>Game</th>
+		<th>DAU</th>
+		<th>DAU DoD % Change</th>
+		<th>DAU WoW % Change</th>
+		<th>Installs</th>
+		<th>Installs DoD % Change</th>
+		<th>Installs WoW % Change</th>
+		<th>MAU</th>
+		<th>MAU DoD % Change</th>
+		<th>MAU WoW % Change</th>
+	</tr>
+	<tr align="right">
+		<td>1</td>
+		<td>Ataris Greatest Hits</td>
+		<td>29,089</td>
+		<td>-17.80%</td>
+		<td>0.96%</td>
+		<td>8,525</td>
+		<td>-21.38%</td>
+		<td>-25.56%</td>
+		<td>771,731</td>
+		<td>-0.80%</td>
+		<td>0.05%</td>
+	</tr>
+	<tr align="right">
+		<td>2</td>
+		<td>Breakout</td>
+		<td>28,226</td>
+		<td>-15.69%</td>
+		<td>-3.07%</td>
+		<td>2,244</td>
+		<td>-19.30%</td>
+		<td>-15.37%</td>
+		<td>262,549</td>
+		<td>-0.67%</td>
+		<td>4.13%</td>
+	</tr>
+	<tr align="right">
+		<td>3</td>
+		<td>Circus Atari</td>
+		<td>6,130</td>
+		<td>-9.31%</td>
+		<td>11.79%</td>
+		<td>594</td>
+		<td>-3.70%</td>
+		<td>11.95%</td>
+		<td>99,446</td>
+		<td>0.83%</td>
+		<td>6.63%</td>
+	</tr>
+	<tr align="right">
+		<td>4</td>
+		<td>Asteroids Gunner</td>
+		<td>5,480</td>
+		<td>-20.58%</td>
+		<td>-2.21%</td>
+		<td>705</td>
+		<td>-15.18%</td>
+		<td>-12.48%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>5</td>
+		<td>Centipede - Origin</td>
+		<td>919</td>
+		<td>-19.80%</td>
+		<td>8.49%</td>
+		<td>165</td>
+		<td>-29.09%</td>
+		<td>3.03%</td>
+		<td>19,264</td>
+		<td>1.44%</td>
+		<td>14.60%</td>
+	</tr>
+	<tr align="right">
+		<td>6</td>
+		<td>Breakout Premium</td>
+		<td>854</td>
+		<td>-6.67%</td>
+		<td>3.98%</td>
+		<td>66</td>
+		<td>-24.24%</td>
+		<td>-3.03%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>7</td>
+		<td>Greatest Hits (Kindle)</td>
+		<td>765</td>
+		<td>-17.78%</td>
+		<td>19.09%</td>
+		<td>302</td>
+		<td>-25.83%</td>
+		<td>26.16%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>8</td>
+		<td>Freddi Fish and the Stolen Shell</td>
+		<td>344</td>
+		<td>-11.34%</td>
+		<td>-3.20%</td>
+		<td>13</td>
+		<td>-23.08%</td>
+		<td>-23.08%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>9</td>
+		<td>Greatest Hits Pro (Kindle)</td>
+		<td>310</td>
+		<td>-20.65%</td>
+		<td>20.00%</td>
+		<td>54</td>
+		<td>-9.26%</td>
+		<td>37.04%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>10</td>
+		<td>Putt-Putt Saves the Zoo</td>
+		<td>248</td>
+		<td>-15.32%</td>
+		<td>-0.81%</td>
+		<td>9</td>
+		<td>-22.22%</td>
+		<td>-55.56%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>11</td>
+		<td>Asteroids Premium</td>
+		<td>73</td>
+		<td>-15.07%</td>
+		<td>6.85%</td>
+		<td>16</td>
+		<td>-56.25%</td>
+		<td>-31.25%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>12</td>
+		<td>Outlaw</td>
+		<td>12</td>
+		<td>91.67%</td>
+		<td>-100.00%</td>
+		<td>2</td>
+		<td>850.00%</td>
+		<td>-100.00%</td>
+		<td>21</td>
+		<td>-9.52%</td>
+		<td>-100.00%</td>
+	</tr>
+	<tr align="right">
+		<td>13</td>
+		<td>Super Bunny Breakout</td>
+		<td>8</td>
+		<td>100.00%</td>
+		<td>225.00%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>14</td>
+		<td>Asteroids: Shift</td>
+		<td>1</td>
+		<td>100.00%</td>
+		<td>-100.00%</td>
+		<td>1</td>
+		<td>-100.00%</td>
+		<td>-100.00%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr align="right">
+		<td>15</td>
+		<td>D&D Warbands (Dev)</td>
+		<td>1</td>
+		<td>500.00%</td>
+		<td>-100.00%</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+</table>
+</td></table>
+</body>
+</html>

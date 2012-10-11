@@ -190,18 +190,18 @@ class Menu {
 
 		$result = run_sql($this->db, $sql);
 
-		echo "\n<table width='100%' border='2'>\n";
+		echo "\n<table class='log' width='100%'>\n";
 		echo "<tr>\n";
 		if ( $report == '' ) {
-			echo "<th width='15%' style='{background-color: silver}'>&nbsp;Report Name</th>\n";
-			echo "<th width='20%' style='{background-color: silver}'>&nbsp;Time Stamp</th>\n";
-			echo "<th width='50%' style='{background-color: silver}'>&nbsp;Parameters</th>\n";
-			echo "<th width='15%' style='{background-color: silver}'>&nbsp;Status</th>\n";
+			echo "<th class='log' width='15%' style='{background-color: silver}'>&nbsp;Report Name</th>\n";
+			echo "<th class='log' width='20%' style='{background-color: silver}'>&nbsp;Time Stamp</th>\n";
+			echo "<th class='log' width='50%' style='{background-color: silver}'>&nbsp;Parameters</th>\n";
+			echo "<th class='log' width='15%' style='{background-color: silver}'>&nbsp;Status</th>\n";
 		}
 		else {
-			echo "<th width='20%' style='{background-color: silver}'>&nbsp;Time Stamp</th>\n";
-			echo "<th width='65%' style='{background-color: silver}'>&nbsp;Parameters</th>\n";
-			echo "<th width='15%' style='{background-color: silver}'>&nbsp;Status</th>\n";
+			echo "<th class='log' width='20%' style='{background-color: silver}'>&nbsp;Time Stamp</th>\n";
+			echo "<th class='log' width='65%' style='{background-color: silver}'>&nbsp;Parameters</th>\n";
+			echo "<th class='log' width='15%' style='{background-color: silver}'>&nbsp;Status</th>\n";
 			echo "</tr>\n";
 		}
 
@@ -210,25 +210,27 @@ class Menu {
 			echo "<tr>";
 
 			if ( $report == '' ) {
-				echo "<td style='{vertical-align: top}'><a href='report_menu.php?_report=".$row['report_name']."'>".$row['report_name']."</a></td>\n";
-				echo "<td style='{vertical-align: top}'><a href='report_log.php?_report=".$row['report_name']."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
+				echo "<td class='log' style='{vertical-align: top}'><a href='index.php?_type=report&_name=".$row['report_name']."'>".$row['report_name']."</a></td>\n";
+				echo "<td class='log' style='{vertical-align: top}'><a href='report_log.php?_report=".$row['report_name']."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
 			}
 			else {
-				echo "<td style='{vertical-align: top}'><a href='report_log.php?_report=".$report."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
+				echo "<td class='log' style='{vertical-align: top}'><a href='report_log.php?_report=".$report."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
 			}
 
-			echo "<td style='{vertical-align: top}'>".$row['report_parms']."</td>\n";
+			echo "<td class='log' style='{vertical-align: top}'>".$row['report_parms']."</td>\n";
 			if ( $row['report_code'] == 0 ) { 
-				echo "<td style='{background-color: yellowgreen; vertical-align: top}'>Complete</td></tr>\n";
+				echo "<td class='log' style='{background-color: yellowgreen; vertical-align: top}'>Complete</td></tr>\n";
 			}
 			elseif ( $row['report_code'] == 4 ) {
-				echo "<td style='background-color: orange; {vertical-align: top}'>Running</td></tr>\n";
+				echo "<td class='log' style='background-color: orange; {vertical-align: top}'>Running</td></tr>\n";
 			}
 		}
 
 		echo "</table>\n";
 	}
-	function DailyStats() {
+
+	// This function pulls the info from daily_stats.html so we can display it in the main menu
+	function getDailyStats() {
 		$sql = "SELECT report_html, report_parms
 			FROM reporting.report_log
 			WHERE report_name='daily_stats'
@@ -240,19 +242,32 @@ class Menu {
 		$result = run_sql($this->db, $sql);
 		$row = $result[0]->fetch_assoc();
 		$html = $row['report_html'];
-		$date = substr($row['report_parms'],strpos($row['report_parms'],'date=')+5,10);
-		$fh=fopen(__ROOT__.'/html/tmp/daily_stats.html','w') or die("ERROR: Cannot open file daily_stats/xml. Error: $php_errormsg<br>");
-		fwrite($fh,$html);
-		fclose($fh);
+		//$date = substr($row['report_parms'],strpos($row['report_parms'],'date=')+5,10);
+		
+		// Get the google chart data
+		$sp1 = strpos($html, "<!-- GOOGLE CHART DATA START -->")+strlen("<!-- GOOGLE CHART DATA START -->");
+		$sp2 = strpos(substr($html, $sp1), "<!-- GOOGLE CHART DATA END -->");
+		$chartData=substr($html, $sp1, $sp2);
+		$sp1 = strpos($html, "<h1>Atari Mobile Daily Stats Summary");
+		$sp2 = strpos(substr($html, $sp1), "</body>")-1;
+		$tableData=substr($html, $sp1, $sp2);
+		
+		return array('chart' => $chartData, 'table' => $tableData);
+
 	}
 
 	function toHTML() {
 
-        	echo "<table width='100%' id='menu'>\n";
+
+	        //Read through the result to create the navigation
+		//$dailyStats=$this->getDailyStats();
+		require_once(__ROOT__.'/tpl/view_hdr.html');
+
+        	echo "<html>\n<body>\n<table id='nav' class='nav' style='{width:100%}'>\n";
 
 		if ( $this->level == 1 ) {
 			foreach( $this->levels[0]->menu as $key => $value ) {
-				echo "<tr><td colspan='3'><a href='report_menu.php?_menu=";
+				echo "<tr><td class='nav'><a href='index.php?_type=menu&_name=";
 				if ( $this->hasChild($value['id']) ) { 
 					echo $value['id']."'>+ $key</a></td></tr>\n";
 				}
@@ -263,7 +278,7 @@ class Menu {
 		}
 		elseif ( $this->level == 2 ) {
 			foreach( $this->levels[0]->menu as $key => $value ) {
-				echo "<tr><td colspan='3'><a href='report_menu.php?_menu=";
+				echo "<tr><td class='nav'><a href='index.php?_type=menu&_name=";
 				if ( $this->hasChild($value['id']) && $value['id'] !=  $this->menu ) { 
 					echo $value['id']."'>+ $key</a></td></tr>\n";
 				}
@@ -276,19 +291,17 @@ class Menu {
 				foreach ( $this->levels[1]->menu as $key2 => $value2 ) {
 					if ( $this->hasChild($value2['id']) && $value2['parent'] == $value['id'] && $value['id'] == $this->menu ) {
 					// Check if this entry has a report if so, include the report in the URI
-						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-						echo "<a href='report_menu.php?_menu=".$value2['id']."'>+ $key2</a></td></tr>\n";
+						echo "<tr><td class='nav'>&nbsp;&nbsp;&nbsp;&nbsp;<a href='index.php?_type=menu&_name=".$value2['id']."'>+ $key2</a></td></tr>\n";
 					}
 					elseif ( $value2['parent'] == $value['id'] && $value['id'] == $this->menu ) {
-						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-						echo "<a href='report_menu.php?_report=".$this->getReportFromMenu($value2['id'])."'>$key2</a></td></tr>\n";
+						echo "<tr><td class='nav'>&nbsp;&nbsp;&nbsp;&nbsp;<a href='index.php?_type=report&_name=".$this->getReportFromMenu($value2['id'])."'>$key2</a></td></tr>\n";
 					}
 				}
 			}
 		}
 		elseif ( $this->level == 3 ) {
 			foreach( $this->levels[0]->menu as $key => $value ) {
-				echo "<tr><td colspan='3'><a href='report_menu.php?_menu=";
+				echo "<tr><td class='nav'><a href='index.php?_type=menu&_name=";
 				if ( $this->hasChild($value['id']) && $this->getParent($this->menu) == $value['id']  ) { 
 					echo $value['id']."'>o $key</a></td></tr>\n";
 				}
@@ -300,29 +313,25 @@ class Menu {
 				}
 				foreach ( $this->levels[1]->menu as $key2 => $value2 ) {
 					if ( $this->hasChild($value2['id']) && $value2['parent'] == $value['id'] && $value['id'] == $this->top && $value2['id'] != $this->menu ) {
-						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-						echo "<a href='report_menu.php?_menu=".$value2['id']."'>+ $key2</a></td></tr>\n";
+						echo "<tr><td class='nav'>&nbsp;&nbsp;&nbsp;&nbsp;<a href='index.php?_type=menu&_name=".$value2['id']."'>+ $key2</a></td></tr>\n";
 					}
 					elseif ( $this->hasChild($value2['id']) && $value2['parent'] == $value['id'] && $value['id'] == $this->top && $value2['id'] == $this->menu ) {
-						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-						echo "<a href='report_menu.php?_menu=".$value2['id']."'>o $key2</a></td></tr>\n";
+						echo "<tr><td class='nav'>&nbsp;&nbsp;&nbsp;&nbsp;<a href='index.php?_type=menu&_name=".$value2['id']."'>o $key2</a></td></tr>\n";
 					}
 					elseif ( $value2['parent'] == $value['id'] && $value['id'] == $this->top ) {
-						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td colspan='2'>";
-						echo "<a href='report_menu.php?_report=".$this->getReportFromMenu($value2['id'])."'>$key2</a></td></tr>\n";
+						echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href='index.php?_type=report&_name=".$this->getReportFromMenu($value2['id'])."'>$key2</a></td></tr>\n";
 					}
 					foreach ( $this->levels[2]->menu as $key3 => $value3 ) {
 						
 						if ( $value3['parent'] == $value2['id'] && $value2['parent'] == $value['id'] && $value['id'] == $this->top ) {
-							echo "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td>";
-							echo "<a href='report_menu.php?_report=".$this->getReportFromMenu($value3['id'])."'>$key3</a></td></tr>\n";
+							echo "<tr><td class='nav'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='index.php?_type=report&_name=".$this->getReportFromMenu($value3['id'])."'>$key3</a></td></tr>\n";
 						}
 					}
 				}
 			}
 		}
 			
-		echo "</table id='3'>\n";
+		echo "</table>\n</body></html>";
 	}
 	// This function sets the parameter to HTML so it can be selected
 }

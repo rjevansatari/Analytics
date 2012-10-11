@@ -29,4 +29,13 @@ This report shows the installs by date for a selected game and or client for a s
 <parm name="enddate" type="date" text="End date"/>
 <column name="Installs" format="number"/>
 <column name="Date" format="date"/>
+<chart query="installs" type="LineChart" title="Install By Date" options="height:600, width: 800">
+<haxis options="{slantedText: true, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{baselineColor: 'black', title: 'Install',   titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name="Date"/>
+<column name="DAU"/>
+</chart>
 </xml>
+
+

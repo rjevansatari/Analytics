@@ -69,7 +69,7 @@ class ReportParameter {
 	        }
 
 		if ( $this->type == "query" ) {
-                	echo "<td>".$this->text.":</td><td><select name='" . $this->name."' style='{border: solid 1px}'>\n";
+                	echo "<td width='30%'>".$this->text.":</td><td><select name='" . $this->name."' style='{border: solid 1px}'>\n";
 			
                 	if ( $result = run_sql($this->db, $this->query) ) {
 
@@ -375,12 +375,12 @@ class Table extends Report
 		}
 
 		//$attrs = array('width' => '600', 'border' => '1', 'class' => 'report');
-		$attrs = array('border' => '1', 'class' => 'report');
+		$attrs = array('class' => 'report');
+		$rAttrs=array();
+
 		$table = new \HTML_Table($attrs);
 		$table->setAutoGrow(true);
-		$hrAttrs = array('bgcolor' => 'silver', 'align' => 'center');
-		$table->setRowAttributes(0, $hrAttrs, true);
-		$hrAttrs = array('align' => 'right');
+		$table->setRowAttributes(0, $rAttrs, true);
 
 		$record=0;
 
@@ -389,7 +389,7 @@ class Table extends Report
 			if ( $record > 0 ) {
 				$col=0;
 				$table->setCellContents($record+1, $col, $record+1);	
-				$table->setRowAttributes($record+1, $hrAttrs, true);
+				$table->setRowAttributes($record+1, $rAttrs, true);
 	
 				foreach ($row as $key => $value) {
 					$col++;
@@ -429,7 +429,7 @@ class Table extends Report
 				$col=0;
 	
 				$table->setCellContents($record+1, $col, $record+1);	
-				$table->setRowAttributes($record+1, $hrAttrs, true);
+				$table->setRowAttributes($record+1, $rAttrs, true);
 				foreach ($row as $key => $value) {
 					$col++;
 					if ( isset($this->formats[strtolower($key)]) ) {
@@ -571,6 +571,14 @@ class Chart extends Report
 								$chartData.=", new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
 						}
+						elseif ( in_array($this->formats[strtolower($key)], array('number')) ) {
+							if ( $col == 1 ) { 
+								$chartData.="[".round($value);
+							}
+							else {
+								$chartData.=",".round($value);
+							}
+						}
 						else {
 							if ( $col == 1 ) { 
 								$chartData.="[".$value;
@@ -626,6 +634,14 @@ class Chart extends Report
 							}
 							else {
 								$chartData.=", new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
+							}
+						}
+						elseif ( in_array($this->formats[strtolower($key)], array('number')) ) {
+							if ( $col == 1 ) { 
+								$chartData.="[".round($value);
+							}
+							else {
+								$chartData.=",".round($value);
 							}
 						}
 						else {
@@ -820,8 +836,14 @@ class Report
 		$this->passedParms=$parms;
 		$this->nPassedParms = count($this->passedParms);
 
+       	 	foreach ( $this->passedParms as $key => $value ) {
+			$this->passedParms[$key]=str_ireplace('today',date('Y-m-d'),$this->passedParms[$key]);
+			$this->passedParms[$key]=str_ireplace('yesterday-29d',date('Y-m-d', mktime(0, 0, 0, date("m")  , date("d")-30, date("Y"))),$this->passedParms[$key]);
+			$this->passedParms[$key]=str_ireplace('yesterday',date('Y-m-d', mktime(0, 0, 0, date("m")  , date("d")-1, date("Y"))),$this->passedParms[$key]);
+		}
+
 		foreach ( $this->queries as $index => $query ) {
-			$query->parms = new QueryParms($parms);	
+			$query->parms = new QueryParms($this->passedParms);	
 		}
 
 		$fh = fopen("/tmp/".$this->csv,"w") or die ("ERROR: Could not open file...");
@@ -959,31 +981,36 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 		$this->HTML.="</head>\n";
 
 		// Main body - Report info
-	        $this->HTML.="<body class='report'>\n";
+	        $this->HTML.="<body>\n";
 
 		// In case we have any parms in the title
 	        foreach ( $this->passedParms as $key => $value ) {
 	        	$this->title=str_replace("$".$key, $value, $this->title);
 	        }
-	        $this->HTML.="<h1>$this->title</h1>\n";
 
 		if ( $this->batch == FALSE ) { 
+	        	$this->HTML.="<div class='parms_passed'>\n<h1>$this->title</h1>\n";
 	        	$this->HTML.="<p>".str_replace("\n","<br>",$this->description)."</p>\n";
 	        	$this->HTML.="<h2>Report Name: $this->reportName</h2>\n";
 	       		$this->HTML.="<h3>Parameters Passed:</h3>\n";
-	        	$this->HTML.="<table class='report'>\n";
+	        	$this->HTML.="<table>\n";
 	        	foreach ( $this->passedParms as $key => $value ) {
-	                	$this->HTML.="<tr><td>$key</td><td>$value</td></tr>\n";
+	                	$this->HTML.="<tr><td>$key:&nbsp;</td><td>$value</td></tr>\n";
 	        	}
 	        	$this->HTML.="</table>\n";
 	        	$this->HTML.="<br>\n";
 	        	$this->HTML.="<form method='post' action='report_download.php'>\n";
 	        	$this->HTML.="<input name='report' type='hidden' value='" . $this->csv . "'>\n";
 	        	$this->HTML.="<input type='submit' value='Download CSV'>\n";
-	        	$this->HTML.="</form>\n";
+	        	$this->HTML.="</form>\n</div>\n";
 		}
 		else {
-	        $this->HTML.="<br>\n";
+			$this->HTML.="<h1>$this->title</h1>\n";
+	        	$this->HTML.="<br>\n";
+	        	$this->HTML.="<form method='post' action='report_download.php'>\n";
+	        	$this->HTML.="<input name='report' type='hidden' value='" . $this->csv . "'>\n";
+	        	$this->HTML.="<input type='submit' value='Download CSV'>\n";
+	        	$this->HTML.="</form>\n";
 		}
 
 		// Results
@@ -1002,10 +1029,10 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 						$this->HTML.="</tr>\n<tr>\n";
 					}
 					if ( isset($chart->width) ) {
-						$this->HTML.="<td style='{border: solid 1px black}' width='".$chart->width."%'><div id='chart_div".$chart->name."'></div></td>\n";
+						$this->HTML.="<td class='chart' width='".$chart->width."%'><div id='chart_div".$chart->name."'></div></td>\n";
 					}
 					else {
-						$this->HTML.="<td style='{border: solid 1px black}'><div id='chart_div".$chart->name."'></div></td>\n";
+						$this->HTML.="<td class='chart'><div id='chart_div".$chart->name."'></div></td>\n";
 					}
 				}
 			}
@@ -1020,15 +1047,15 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 		foreach ( $this->tables as $name => $table ) {
 			if ( !$table->isHidden ) {
 				if ( !$t_found ) {
-					$this->HTML.="<h1>".$table->title."</h1><br>\n";
-					$this->HTML.="<table class='report'>\n";
-					$this->HTML.="<tr><td class='report'>\n";
+					$this->HTML.="<br>\n<h1>".$table->title."</h1><br>\n";
+					$this->HTML.="<table>\n";
+					$this->HTML.="<tr><td>\n";
 					$this->HTML.=$table->HTML;
 					$this->HTML.="</td><td>&nbsp;</td>";
 					$t_found = TRUE;
 				}
 				else {
-					$this->HTML.="<tr><td class='report'>\n";
+					$this->HTML.="<tr><td>\n<br>";
 					$this->HTML.="<h1>".$table->title."</h1>\n<br>\n";
 					$this->HTML.=$table->HTML;
 					$this->HTML.="</td><td>&nbsp;</td>";
@@ -1040,7 +1067,7 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 			if ( isset($this->charts) ) {
 				foreach ( $this->charts as $index => $chart ) {
 					if ( $chart->query == $name && $chart->position != "top") {
-						$this->HTML.="<td style='{border: solid 1px black}'><div id='chart_div".$chart->name."'></div></td></tr>\n";
+						$this->HTML.="<td class='chart'><div id='chart_div".$chart->name."'></div></td></tr>\n";
 						$c_found = TRUE;
 					}
 				}
@@ -1070,6 +1097,7 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 				report_parms,
 				report_html,
 				report_sql,
+				report_csv,
 				report_code) 
 				values('".$this->reportName."','".$ts."',NULL,";
 			$i=0;
@@ -1089,7 +1117,7 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 			else {
 				$sql.='NULL,';
 			}
-			$sql.="NULL,NULL,$code);";
+			$sql.="NULL,NULL,'".$this->csv."', $code);";
 		}
 		elseif ( $code == 0 ) {
 			$now=date("Y-m-d H:i:s");

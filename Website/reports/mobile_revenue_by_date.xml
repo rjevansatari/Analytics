@@ -1,0 +1,53 @@
+<xml>
+<title>
+Revenue By Date
+</title>
+<description>
+This report shows the gross revenue by date for a selected game and or client for a specified date range.
+In addition, this report also shows the Rev/DAU or DARPU for the same selected game and date range.
+</description>
+<query name="revenue" title="Revenue By Date">
+:qcreate temporary table tmp.revenue(index(stat_date, currency_code)) engine=myisam
+as
+select start_date as stat_date,
+currency_of_proceeds as currency_code,
+sum(units*net_revenue)/0.7 as gross_revenue
+from star.itunes_sales
+where start_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+group by 1,2
+;
+
+	select stat_date as Date,
+	sum(value) as DAU
+	from star.s_game_day
+	where case when '$gameid'='-2' then game_id else $gameid end = game_id
+	and case when '$clientid'='-2' then client_id else $clientid end = client_id
+	and stat_date between '$startdate' and '$enddate'
+	and metric='ActiveUsersByDay'
+	group by 1
+	order by 1
+</query>
+<chart query="dau" type="LineChart" title="DAU By Date" options="height:600, width: 800">
+<haxis options="{slantedText: true, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{baselineColor: 'black', title: 'DAU',   titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name="Date"/>
+<column name="DAU"/>
+</chart>
+<parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
+	select distinct game_id, game_name
+	from lookups.l_flurry_game
+	union
+	select -2, 'All Games'
+	order by 2
+</parm>
+<parm name="clientid" type="select" text ="Client" default="iPhone">
+	<option value="-2">All Clients</option>
+	<option value="1">iPhone</option>
+	<option value="2">Android</option>
+</parm>
+<parm name="startdate" type="date" text="Start date"/>
+<parm name="enddate" type="date" text="End date"/>
+<column name="DAU" format="number"/>
+<column name="Date" format="date"/>
+</xml>
