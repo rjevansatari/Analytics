@@ -1,0 +1,1290 @@
+<xml>
+<title>
+Mobile Super Bunny Breakout Daily Dashboard - $date
+</title>
+<description>
+This report provides daily stats for SBB Free and SBB Paid. The daily stats are as follows:
+
+o DAU
+o Installs
+o Sessions and session length
+o MAU
+o Engagement
+o D1, D7, D30 Retention
+o Free to paid conversion
+
+The report shows day on day (DoD) and week on week (WoW) % changes as well as 30 day trends.
+
+NOTE: Same Day Conversion reports users who install the Free and Paid version on the same day.
+NOTE: Next Day and Day Three conversion reports users installing the paid version 1 and 3 days after installing the free version respectively. 
+NOTE: The first set of tables shows SBB Free and Paid overall, the next set of tables breaks down each game.
+NOTE: MAU and Retention metric are calculated from tracked events and may not reflect true monthly user counts or installs. 
+NOTE: Revenue is gross and unadjusted for Apple and Zynga revenue share as well as development and recoupment costs. 
+</description>
+<query hidden="true" time="10" name="overalldailystats" title="Super Bunny Breakout Overall 30 Day Stats Trends">
+drop table if exists tmp.a_metrics_sbb_daily_dash;
+
+#DAU
+create table tmp.a_metrics_sbb_daily_dash engine=myisam
+as
+select stat_date,
+game_id, 
+client_id, 
+cast('dau' as char(13)) as metric,
+sum(value) as value
+from star.s_game_day
+where metric='ActiveUsersByDay'
+and stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Installs
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'installs' as metrics,
+sum(value) as value
+from star.s_game_day
+where metric='NewUsers'
+and stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Sessions
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'sessions' as metrics,
+sum(value) as value
+from star.s_game_day
+where metric='Sessions'
+and stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Session Length
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'sessionlen' as metrics,
+sum(value) as value
+from star.s_game_day
+where metric='MediumSessionLength'
+and stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#MAU
+drop table if exists tmp.dau_sbb_daily_dash;
+
+create table tmp.dau_sbb_daily_dash(index(user_id)) engine=MyIsam
+as 
+select
+game_id,
+client_id,
+user_id, 
+stat_date
+from star.s_user_day
+where game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+;
+
+# 7 Day Averages
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'7dau' as metric,
+round(sum(value)/7.0) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau_sbb_daily_dash a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 6 day) and d.date
+and d.date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+# Summarise MAU
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'mau' as metric,
+sum(value) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau_sbb_daily_dash a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 29 day) and d.date
+and d.date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Summarise Revenue
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT stat_date,
+game_id,
+client_id,
+'revenue' as metric,
+sum(revenue/0.7) as value
+from star.app_figures a
+where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+and a.game_id in (21,24)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Summarise Units
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT stat_date,
+game_id,
+client_id,
+'units' as metric,
+sum(downloads) as value
+from star.app_figures a
+where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+and a.game_id in (21,24)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+select stat_date as Date,
+max(a.dau) as DAU,
+max(a.installs) as Installs,
+max(a.mau) as MAU,
+max(a.engagement) as Engagement,
+max(a.revenue) as Revenue,
+max(a.units) as Units,
+sum(b.dau)/(30) as Avg_DAU,
+sum(b.installs)/(30) as Avg_Installs,
+sum(b.mau)/(30) as Avg_MAU,
+max(b.engagement) as Avg_Engagement,
+sum(b.revenue)/(30) as Avg_Revenue,
+sum(b.units)/(30) as Avg_Units
+from 
+(
+	select stat_date,
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+	group by 1
+) a,
+( 
+	select 
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+) b
+group by 1
+order by 1
+;
+
+</query>
+<query time="10" name="overallsummary" title="Super Bunny Breakout Overall Daily Summary">
+select
+'DAU' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='dau'
+group by 1
+union
+select
+'Installs' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='installs'
+group by 1
+union
+select
+'Sessions' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='sessions'
+group by 1
+union
+select
+'Med Session Length' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='sessionlen'
+group by 1
+union
+select
+'MAU' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='mau'
+group by 1
+union
+select
+'Revenue' as Metric,
+concat('$',format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='revenue'
+group by 1
+union
+select
+'Revenue/DAU' as Metric,
+concat('$',format(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric in('revenue','dau')
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="overallretention" title="Super Bunny Breakout Overall 30 Day Retention Trends">
+drop table if exists tmp.installs_sbb_daily_dash;
+
+create table tmp.installs_sbb_daily_dash(index(user_id)) engine=MyIsam
+as 
+select game_id,
+client_id, 
+user_id, 
+min(stat_date) as install_date
+from tmp.dau_sbb_daily_dash
+where game_id in (21,24)
+and client_id=1
+group by 1,2,3
+;
+
+drop table if exists tmp.retention_summary_sbb_daily_dash;
+
+create table tmp.retention_summary_sbb_daily_dash engine=MyIsam
+as
+SELECT i.game_id,
+i.install_date,
+datediff(d.stat_date, i.install_date) as ddiff, 
+count(distinct i.user_id) as cnt
+FROM tmp.installs_sbb_daily_dash i 
+left join tmp.dau_sbb_daily_dash d 
+on i.game_id=d.game_id
+and i.user_id=d.user_id
+where i.install_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+GROUP BY 1,2,3
+;
+
+SELECT install_date as "Install Date", 
+users as Installs,
+day1 *100.0 / users as "D1%",
+#day2 *100.0 / users as "D2%",
+#day3 *100.0 / users as "D3%",
+#day4 *100.0 / users as "D4%",
+#day5 *100.0 / users as "D5%",
+#day6 *100.0 / users as "D6%",
+day7 *100.0 / users as "D7%",
+#day8 *100.0 / users as "D8%",
+#day9 *100.0 / users as "D9%",
+#day10 *100.0 / users as "D10%",
+#day11 *100.0 / users as "D11%",
+#day12 *100.0 / users as "D12%",
+#day13 *100.0 / users as "D13%",
+day14 *100.0 / users as "D14%",
+#day15 *100.0 / users as "D15%",
+#day16 *100.0 / users as "D16%",
+#day17 *100.0 / users as "D17%",
+#day18 *100.0 / users as "D18%",
+#day19 *100.0 / users as "D19%",
+#day20 *100.0 / users as "D20%",
+#day21 *100.0 / users as "D21%",
+#day22 *100.0 / users as "D22%",
+#day23 *100.0 / users as "D23%",
+#day24 *100.0 / users as "D24%",
+#day25 *100.0 / users as "D25%",
+#day26 *100.0 / users as "D26%",
+#day27 *100.0 / users as "D27%",
+#day28 *100.0 / users as "D28%",
+#day29 *100.0 / users as "D29%",
+day30 *100.0 / users as "D30%",
+day1,
+#day2,
+#day3,
+#day4,
+#day5,
+#day6,
+day7,
+#day8,
+#day9,
+#day10,
+#day11,
+#day12,
+#day13,
+day14,
+#day15,
+#day16,
+#day17,
+#day18,
+#day19,
+#day20,
+#day21,
+#day22,
+#day23,
+#day24,
+#day25,
+#day26,
+#day27,
+#day28,
+#day29,
+day30
+FROM
+(
+SELECT install_date, 
+sum(case when ddiff=0 or ddiff is null then cnt else 0 end) users,
+sum(case when ddiff = 1 then cnt else 0 end) day1,
+sum(case when ddiff = 2 then cnt else 0 end) day2,
+sum(case when ddiff = 3 then cnt else 0 end) day3,
+sum(case when ddiff = 4 then cnt else 0 end) day4,
+sum(case when ddiff = 5 then cnt else 0 end) day5,
+sum(case when ddiff = 6 then cnt else 0 end) day6,
+sum(case when ddiff = 7 then cnt else 0 end) day7,
+sum(case when ddiff = 8 then cnt else 0 end) day8,
+sum(case when ddiff = 9 then cnt else 0 end) day9,
+sum(case when ddiff = 10 then cnt else 0 end) day10,
+sum(case when ddiff = 11 then cnt else 0 end) day11,
+sum(case when ddiff = 12 then cnt else 0 end) day12,
+sum(case when ddiff = 13 then cnt else 0 end) day13,
+sum(case when ddiff = 14 then cnt else 0 end) day14,
+sum(case when ddiff = 15 then cnt else 0 end) day15,
+sum(case when ddiff = 16 then cnt else 0 end) day16,
+sum(case when ddiff = 17 then cnt else 0 end) day17,
+sum(case when ddiff = 18 then cnt else 0 end) day18,
+sum(case when ddiff = 19 then cnt else 0 end) day19,
+sum(case when ddiff = 20 then cnt else 0 end) day20,
+sum(case when ddiff = 21 then cnt else 0 end) day21,
+sum(case when ddiff = 22 then cnt else 0 end) day22,
+sum(case when ddiff = 23 then cnt else 0 end) day23,
+sum(case when ddiff = 24 then cnt else 0 end) day24,
+sum(case when ddiff = 25 then cnt else 0 end) day25,
+sum(case when ddiff = 26 then cnt else 0 end) day26,
+sum(case when ddiff = 27 then cnt else 0 end) day27,
+sum(case when ddiff = 28 then cnt else 0 end) day28,
+sum(case when ddiff = 29 then cnt else 0 end) day29,
+sum(case when ddiff = 30 then cnt else 0 end) day30
+FROM 
+tmp.retention_summary_sbb_daily_dash
+GROUP BY install_date
+) a
+ORDER BY install_date desc;
+</query>
+<query hidden="true" time="10" name="freedailystats" title="Super Bunny Breakout Free 30 Day Stats Trends">
+select stat_date as Date,
+max(a.dau) as DAU,
+max(a.installs) as Installs,
+max(a.mau) as MAU,
+max(a.engagement) as Engagement,
+max(a.revenue) as Revenue,
+max(a.units) as Units,
+sum(b.dau)/(30) as Avg_DAU,
+sum(b.installs)/(30) as Avg_Installs,
+sum(b.mau)/(30) as Avg_MAU,
+max(b.engagement) as Avg_Engagement,
+sum(b.revenue)/(30) as Avg_Revenue,
+sum(b.units)/(30) as Avg_Units
+from 
+(
+	select stat_date,
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+	and game_id=24
+	group by 1
+) a,
+( 
+	select 
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+	and game_id=24
+) b
+group by 1
+order by 1
+;
+
+</query>
+<query time="10" name="freesummary" title="Super Bunny Breakout Free Daily Summary">
+select
+'DAU' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='dau'
+and game_id=24
+group by 1
+union
+select
+'Installs' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='installs'
+and game_id=24
+group by 1
+union
+select
+'Sessions' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='sessions'
+and game_id=24
+group by 1
+union
+select
+'Med Session Length' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='sessionlen'
+and game_id=24
+group by 1
+union
+select
+'MAU' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='mau'
+and game_id=24
+group by 1
+union
+select
+'Revenue' as Metric,
+concat('$',format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='revenue'
+and game_id=24
+group by 1
+union
+select
+'Revenue/DAU' as Metric,
+concat('$',format(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric in('revenue','dau')
+and game_id=24
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="freeretention" title="Super Bunny Breakout Free 30 Day Retention Trends">
+SELECT install_date as "Install Date", 
+users as Installs,
+day1 *100.0 / users as "D1%",
+#day2 *100.0 / users as "D2%",
+#day3 *100.0 / users as "D3%",
+#day4 *100.0 / users as "D4%",
+#day5 *100.0 / users as "D5%",
+#day6 *100.0 / users as "D6%",
+day7 *100.0 / users as "D7%",
+#day8 *100.0 / users as "D8%",
+#day9 *100.0 / users as "D9%",
+#day10 *100.0 / users as "D10%",
+#day11 *100.0 / users as "D11%",
+#day12 *100.0 / users as "D12%",
+#day13 *100.0 / users as "D13%",
+day14 *100.0 / users as "D14%",
+#day15 *100.0 / users as "D15%",
+#day16 *100.0 / users as "D16%",
+#day17 *100.0 / users as "D17%",
+#day18 *100.0 / users as "D18%",
+#day19 *100.0 / users as "D19%",
+#day20 *100.0 / users as "D20%",
+#day21 *100.0 / users as "D21%",
+#day22 *100.0 / users as "D22%",
+#day23 *100.0 / users as "D23%",
+#day24 *100.0 / users as "D24%",
+#day25 *100.0 / users as "D25%",
+#day26 *100.0 / users as "D26%",
+#day27 *100.0 / users as "D27%",
+#day28 *100.0 / users as "D28%",
+#day29 *100.0 / users as "D29%",
+day30 *100.0 / users as "D30%",
+day1,
+#day2,
+#day3,
+#day4,
+#day5,
+#day6,
+day7,
+#day8,
+#day9,
+#day10,
+#day11,
+#day12,
+#day13,
+day14,
+#day15,
+#day16,
+#day17,
+#day18,
+#day19,
+#day20,
+#day21,
+#day22,
+#day23,
+#day24,
+#day25,
+#day26,
+#day27,
+#day28,
+#day29,
+day30
+FROM
+(
+SELECT install_date, 
+sum(case when ddiff=0 or ddiff is null then cnt else 0 end) users,
+sum(case when ddiff = 1 then cnt else 0 end) day1,
+sum(case when ddiff = 2 then cnt else 0 end) day2,
+sum(case when ddiff = 3 then cnt else 0 end) day3,
+sum(case when ddiff = 4 then cnt else 0 end) day4,
+sum(case when ddiff = 5 then cnt else 0 end) day5,
+sum(case when ddiff = 6 then cnt else 0 end) day6,
+sum(case when ddiff = 7 then cnt else 0 end) day7,
+sum(case when ddiff = 8 then cnt else 0 end) day8,
+sum(case when ddiff = 9 then cnt else 0 end) day9,
+sum(case when ddiff = 10 then cnt else 0 end) day10,
+sum(case when ddiff = 11 then cnt else 0 end) day11,
+sum(case when ddiff = 12 then cnt else 0 end) day12,
+sum(case when ddiff = 13 then cnt else 0 end) day13,
+sum(case when ddiff = 14 then cnt else 0 end) day14,
+sum(case when ddiff = 15 then cnt else 0 end) day15,
+sum(case when ddiff = 16 then cnt else 0 end) day16,
+sum(case when ddiff = 17 then cnt else 0 end) day17,
+sum(case when ddiff = 18 then cnt else 0 end) day18,
+sum(case when ddiff = 19 then cnt else 0 end) day19,
+sum(case when ddiff = 20 then cnt else 0 end) day20,
+sum(case when ddiff = 21 then cnt else 0 end) day21,
+sum(case when ddiff = 22 then cnt else 0 end) day22,
+sum(case when ddiff = 23 then cnt else 0 end) day23,
+sum(case when ddiff = 24 then cnt else 0 end) day24,
+sum(case when ddiff = 25 then cnt else 0 end) day25,
+sum(case when ddiff = 26 then cnt else 0 end) day26,
+sum(case when ddiff = 27 then cnt else 0 end) day27,
+sum(case when ddiff = 28 then cnt else 0 end) day28,
+sum(case when ddiff = 29 then cnt else 0 end) day29,
+sum(case when ddiff = 30 then cnt else 0 end) day30
+FROM 
+tmp.retention_summary_sbb_daily_dash
+where game_id=24
+GROUP BY install_date
+) a
+ORDER BY install_date desc;
+</query>
+<query hidden="true" time="10" name="paiddailystats" title="Super Bunny Breakout Paid 30 Day Stats Trends">
+select stat_date as Date,
+max(a.dau) as DAU,
+max(a.installs) as Installs,
+max(a.mau) as MAU,
+max(a.engagement) as Engagement,
+max(a.revenue) as Revenue,
+max(a.units) as Units,
+sum(b.dau)/(30) as Avg_DAU,
+sum(b.installs)/(30) as Avg_Installs,
+sum(b.mau)/(30) as Avg_MAU,
+max(b.engagement) as Avg_Engagement,
+sum(b.revenue)/(30) as Avg_Revenue,
+sum(b.units)/(30) as Avg_Units
+from 
+(
+	select stat_date,
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+	and game_id=21
+	group by 1
+) a,
+( 
+	select 
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30 day) and date_sub(curdate(), interval 1 day)
+	and game_id=21
+) b
+group by 1
+order by 1
+;
+
+</query>
+<query time="10" name="paidsummary" title="Super Bunny Breakout Paid Overall Daily Summary">
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT a.install_date,
+a.game_id,
+a.client_id,
+'conversion_d0' as metric,
+count(distinct a.user_id) as value
+from tmp.installs_sbb_daily_dash a, tmp.installs_sbb_daily_dash b
+where a.user_id=b.user_id
+and a.client_id=b.client_id
+and a.install_date=b.install_date
+and a.game_id=21
+and b.game_id=24
+and a.install_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT a.install_date,
+a.game_id,
+a.client_id,
+'conversion_d1' as metric,
+count(distinct a.user_id) as value
+from tmp.installs_sbb_daily_dash a, tmp.installs_sbb_daily_dash b
+where a.user_id=b.user_id
+and a.client_id=b.client_id
+and a.install_date=date_add(b.install_date, interval 1 day)
+and a.game_id=21
+and b.game_id=24
+and a.install_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT a.install_date,
+a.game_id,
+a.client_id,
+'conversion_d3' as metric,
+count(distinct a.user_id) as value
+from tmp.installs_sbb_daily_dash a, tmp.installs_sbb_daily_dash b
+where a.user_id=b.user_id
+and a.client_id=b.client_id
+and a.install_date=date_add(b.install_date, interval 3 day)
+and a.game_id=21
+and b.game_id=24
+and a.install_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+select
+'DAU' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='dau'
+and game_id=21
+group by 1
+union
+select
+'Installs' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='installs'
+and game_id=21
+group by 1
+union
+select
+'Sessions' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='sessions'
+and game_id=21
+group by 1
+union
+select
+'Med Session Length' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='sessionlen'
+and game_id=21
+group by 1
+union
+select
+'Conversion - Same Day' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='conversion_d0'
+and game_id=21
+group by 1
+union
+select
+'Conversion - Next Day' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='conversion_d1'
+and game_id=21
+group by 1
+union
+select
+'Conversion - Day 3' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='conversion_d3'
+and game_id=21
+group by 1
+union
+select
+'MAU' as Metric,
+format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='mau'
+and game_id=21
+group by 1
+union
+select
+'Revenue' as Metric,
+concat('$',format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric='revenue'
+and game_id=21
+group by 1
+union
+select
+'Revenue/DAU' as Metric,
+concat('$',format(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
+concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_sbb_daily_dash
+where metric in('revenue','dau')
+and game_id=21
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="paidretention" title="Super Bunny Breakout Paid 30 Day Retention Trends">
+SELECT install_date as "Install Date", 
+users as Installs,
+day1 *100.0 / users as "D1%",
+#day2 *100.0 / users as "D2%",
+#day3 *100.0 / users as "D3%",
+#day4 *100.0 / users as "D4%",
+#day5 *100.0 / users as "D5%",
+#day6 *100.0 / users as "D6%",
+day7 *100.0 / users as "D7%",
+#day8 *100.0 / users as "D8%",
+#day9 *100.0 / users as "D9%",
+#day10 *100.0 / users as "D10%",
+#day11 *100.0 / users as "D11%",
+#day12 *100.0 / users as "D12%",
+#day13 *100.0 / users as "D13%",
+day14 *100.0 / users as "D14%",
+#day15 *100.0 / users as "D15%",
+#day16 *100.0 / users as "D16%",
+#day17 *100.0 / users as "D17%",
+#day18 *100.0 / users as "D18%",
+#day19 *100.0 / users as "D19%",
+#day20 *100.0 / users as "D20%",
+#day21 *100.0 / users as "D21%",
+#day22 *100.0 / users as "D22%",
+#day23 *100.0 / users as "D23%",
+#day24 *100.0 / users as "D24%",
+#day25 *100.0 / users as "D25%",
+#day26 *100.0 / users as "D26%",
+#day27 *100.0 / users as "D27%",
+#day28 *100.0 / users as "D28%",
+#day29 *100.0 / users as "D29%",
+day30 *100.0 / users as "D30%",
+day1,
+#day2,
+#day3,
+#day4,
+#day5,
+#day6,
+day7,
+#day8,
+#day9,
+#day10,
+#day11,
+#day12,
+#day13,
+day14,
+#day15,
+#day16,
+#day17,
+#day18,
+#day19,
+#day20,
+#day21,
+#day22,
+#day23,
+#day24,
+#day25,
+#day26,
+#day27,
+#day28,
+#day29,
+day30
+FROM
+(
+SELECT install_date, 
+sum(case when ddiff=0 or ddiff is null then cnt else 0 end) users,
+sum(case when ddiff = 1 then cnt else 0 end) day1,
+sum(case when ddiff = 2 then cnt else 0 end) day2,
+sum(case when ddiff = 3 then cnt else 0 end) day3,
+sum(case when ddiff = 4 then cnt else 0 end) day4,
+sum(case when ddiff = 5 then cnt else 0 end) day5,
+sum(case when ddiff = 6 then cnt else 0 end) day6,
+sum(case when ddiff = 7 then cnt else 0 end) day7,
+sum(case when ddiff = 8 then cnt else 0 end) day8,
+sum(case when ddiff = 9 then cnt else 0 end) day9,
+sum(case when ddiff = 10 then cnt else 0 end) day10,
+sum(case when ddiff = 11 then cnt else 0 end) day11,
+sum(case when ddiff = 12 then cnt else 0 end) day12,
+sum(case when ddiff = 13 then cnt else 0 end) day13,
+sum(case when ddiff = 14 then cnt else 0 end) day14,
+sum(case when ddiff = 15 then cnt else 0 end) day15,
+sum(case when ddiff = 16 then cnt else 0 end) day16,
+sum(case when ddiff = 17 then cnt else 0 end) day17,
+sum(case when ddiff = 18 then cnt else 0 end) day18,
+sum(case when ddiff = 19 then cnt else 0 end) day19,
+sum(case when ddiff = 20 then cnt else 0 end) day20,
+sum(case when ddiff = 21 then cnt else 0 end) day21,
+sum(case when ddiff = 22 then cnt else 0 end) day22,
+sum(case when ddiff = 23 then cnt else 0 end) day23,
+sum(case when ddiff = 24 then cnt else 0 end) day24,
+sum(case when ddiff = 25 then cnt else 0 end) day25,
+sum(case when ddiff = 26 then cnt else 0 end) day26,
+sum(case when ddiff = 27 then cnt else 0 end) day27,
+sum(case when ddiff = 28 then cnt else 0 end) day28,
+sum(case when ddiff = 29 then cnt else 0 end) day29,
+sum(case when ddiff = 30 then cnt else 0 end) day30
+FROM 
+tmp.retention_summary_sbb_daily_dash
+where game_id=21
+GROUP BY install_date
+) a
+ORDER BY install_date desc;
+</query>
+<parm name="date" text="Date" type="date"/>
+<column name="Date" format="date"/>
+<column name='DAU' format='number' />
+<column name='Installs' format='number' />
+<column name='MAU' format='number' />
+<column name='Engagement' format='percent' />
+<column name="Revenue" format="currency"/>
+<column name="Units" format="number"/>
+<column name='DoD % Change' format='percent' />
+<column name='WoW % Change' format='percent' />
+<column name='DAU DoD % Change' format='percent' />
+<column name='DAU WoW % Change' format='percent' />
+<column name='Installs DoD % Change' format='percent' />
+<column name='Installs WoW % Change' format='percent' />
+<column name='MAU DoD % Change' format='percent' />
+<column name='MAU WoW % Change' format='percent' />
+<column name='Rev DoD % Change' format='percent' />
+<column name='Rev WoW % Change' format='percent' />
+<column name='Revenue' format='currency' />
+<column name='Revenue/DAU' format='currency' />
+<column name="Avg_DAU" format="number"/>
+<column name="Avg_Installs" format="number"/>
+<column name="Avg_MAU" format="number"/>
+<column name="Avg_Engagement" format="percent"/>
+<column name="Avg_Revenue" format="currency"/>
+<column name="Avg_Units" format="number"/>
+<column name="D1%" format="percent"/>
+<column name="D2%" format="percent"/>
+<column name="D3%" format="percent"/>
+<column name="D4%" format="percent"/>
+<column name="D5%" format="percent"/>
+<column name="D6%" format="percent"/>
+<column name="D7%" format="percent"/>
+<column name="D8%" format="percent"/>
+<column name="D9%" format="percent"/>
+<column name="D10%" format="percent"/>
+<column name="D11%" format="percent"/>
+<column name="D12%" format="percent"/>
+<column name="D13%" format="percent"/>
+<column name="D14%" format="percent"/>
+<column name="D15%" format="percent"/>
+<column name="D16%" format="percent"/>
+<column name="D17%" format="percent"/>
+<column name="D18%" format="percent"/>
+<column name="D19%" format="percent"/>
+<column name="D20%" format="percent"/>
+<column name="D21%" format="percent"/>
+<column name="D22%" format="percent"/>
+<column name="D23%" format="percent"/>
+<column name="D24%" format="percent"/>
+<column name="D25%" format="percent"/>
+<column name="D26%" format="percent"/>
+<column name="D27%" format="percent"/>
+<column name="D28%" format="percent"/>
+<column name="D29%" format="percent"/>
+<column name="D30%" format="percent"/>
+<column name="Splash Started" format="percent"/>
+<column name="Splash Completed" format="percent"/>
+<column name="Play Started" format="percent"/>
+<column name="Game Started" format="percent"/>
+<column name="Armory Started" format="percent"/>
+<column name="Armory Completed" format="percent"/>
+<column name="Round Two" format="percent"/>
+<column name="Revolver" format="percent"/>
+<column name="PepperBox" format="percent"/>
+<column name="Musket" format="percent"/>
+<column name="CannonPistol" format="percent"/>
+<column name="TarBallGun" format="percent"/>
+<column name="Rifile" format="percent"/>
+<column name="Carbine" format="percent"/>
+<column name="ShortCarbine" format="percent"/>
+<column name="BuffaloGun" format="percent"/>
+<column name="OldSmokey" format="percent"/>
+<column name="LilTimmy" format="percent"/>
+<column name="BullDogGatlin" format="percent"/>
+<column name="BuzzSawyer" format="percent"/>
+<column name="DynOGun" format="percent"/>
+<column name="TelsaLightning" format="percent"/>
+<column name="AppleJack" format="percent"/>
+<column name="MotarMusket" format="percent"/>
+<column name="Attachment" format="percent"/>
+<column name="Barrel" format="percent"/>
+<column name="BiPod" format="percent"/>
+<column name="Capacitor" format="percent"/>
+<column name="Cartridge" format="percent"/>
+<column name="EngravedGrip" format="percent"/>
+<column name="ForeGrip" format="percent"/>
+<column name="Grip" format="percent"/>
+<column name="HipSling" format="percent"/>
+<column name="Igniter" format="percent"/>
+<column name="Loader" format="percent"/>
+<column name="Magazine" format="percent"/>
+<column name="QuickDrawGrip" format="percent"/>
+<column name="RapidLoader" format="percent"/>
+<column name="SideGrip" format="percent"/>
+<column name="Sight" format="percent"/>
+<column name="Stock" format="percent"/>
+<chart position="below" name="Overall_DAU" query="overalldailystats" type="LineChart" title="Overall DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="below" name="Overall_Installs" query="overalldailystats" type="LineChart" title="Overall Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="below" name="Overall_MAU" query="overalldailystats" type="LineChart" title="Overall MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart break="true" position="below" name="Overall_Revenue" query="overalldailystats" type="LineChart" title="Overall Revenue(iOS) 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+<column name='Avg_Revenue'/>
+</chart>
+<chart position="below" name="Overall_Units" query="overalldailystats" type="LineChart" title="Overall Purchases (iOS) 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+<column name='Avg_Units'/>
+</chart>
+<chart position="below" name="Overall_Engagement" query="overalldailystats" type="LineChart" title="Overall Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+<chart position="below" name="Free_DAU" query="freedailystats" type="LineChart" title="Free DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="below" name="Free_Installs" query="freedailystats" type="LineChart" title="Free Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="below" name="Free_MAU" query="freedailystats" type="LineChart" title="Free MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart position="below" break="true" name="Free_Revenue" query="freedailystats" type="LineChart" title="Free Revenue(iOS) 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+<column name='Avg_Revenue'/>
+</chart>
+<chart position="below" name="Free_Units" query="freedailystats" type="LineChart" title="Free Purchases (iOS) 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+<column name='Avg_Units'/>
+</chart>
+<chart position="below" name="Free_Engagement" query="freedailystats" type="LineChart" title="Free Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+<chart position="below" name="Paid_DAU" query="paiddailystats" type="LineChart" title="Paid DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="below" name="Paid_Installs" query="paiddailystats" type="LineChart" title="Paid Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="below" name="Paid_MAU" query="paiddailystats" type="LineChart" title="Paid MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart position="below" break="true" name="Paid_Revenue" query="paiddailystats" type="LineChart" title="Paid Revenue(iOS) 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+<column name='Avg_Revenue'/>
+</chart>
+<chart position="below" name="Paid_Units" query="paiddailystats" type="LineChart" title="Paid Purchases (iOS) 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+<column name='Avg_Units'/>
+</chart>
+<chart position="below" name="Paid_Engagement" query="paiddailystats" type="LineChart" title="Paid Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+</xml>

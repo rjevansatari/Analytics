@@ -34,11 +34,12 @@ table.header {
 table.header td {
 	vertical-align: top;
 	padding:5;
+	white-space: nowrap;
 }
 
 table.log {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: normal;
 	border: solid 1px black;
 }
@@ -50,6 +51,7 @@ table.log th {
 	color: black;
 	border: solid 1px black;
 	padding:5;
+	white-space: nowrap;
 }
 
 table.log td {
@@ -58,6 +60,7 @@ table.log td {
 	text-align: left;
 	border: solid 1px black;
 	padding:5;
+	white-space: nowrap;
 }
 
 table {
@@ -66,10 +69,12 @@ table {
 
 td { 
 	text-align: left;
+	white-space: nowrap;
 }
 
 th {
 	vertical-align: top;
+	white-space: nowrap;
 }
 
 tr { 
@@ -79,11 +84,12 @@ tr {
 td.chart {
 	border: solid 2px black;
 	border-collapse: collapse;
+	white-space: nowrap;
 }
 
 table.report {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: normal;
 	border: solid 2px black;
 	border-collapse: collapse;
@@ -93,10 +99,12 @@ table.report td {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	text-align: right;
 	vertical-align: top;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: normal !important;
 	padding:5;
 	border: solid 2px black;
+	white-space: nowrap;
+    	table-layout: fixed;
 }
 
 #right {
@@ -107,11 +115,13 @@ table.report th {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	text-align: center;
 	vertical-align: top;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: bold;
 	background-color: #006699;
 	color: white;
 	padding:5;
+	white-space: nowrap;
+    	table-layout: fixed;
 	border: solid 2px black;
 }
 table.nav {
@@ -121,11 +131,12 @@ table.nav {
 }
 table.nav td {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: bold !important;
 	text-align: left;
 	vertical-align: top;
 	padding:10;
+	white-space: nowrap;
 
 }
 
@@ -135,25 +146,48 @@ th {
 	vertical-align: top;
 	font-weight: bold;
 	padding:5;
+	white-space: nowrap;
+
 }
 
 div.parms_passed {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: normal !important;
 }
 
 
 div.parms_passed th, td {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: normal !important;
+}
+
+div.parms_passed h1 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+div.parms_passed h2 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: 14px;
+	font-weight: bold;
 }
 
 h1 {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	text-align: left;
-	font-size: 15px;
+	font-size: 14px;
+	font-weight: bold;
+}
+
+h1 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: 16px;
 	font-weight: bold;
 }
 
@@ -164,5 +198,5 @@ img.report {
 }
 body.report {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 }

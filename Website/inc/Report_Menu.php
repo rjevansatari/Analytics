@@ -248,7 +248,7 @@ class Menu {
 		$sp1 = strpos($html, "<!-- GOOGLE CHART DATA START -->")+strlen("<!-- GOOGLE CHART DATA START -->");
 		$sp2 = strpos(substr($html, $sp1), "<!-- GOOGLE CHART DATA END -->");
 		$chartData=substr($html, $sp1, $sp2);
-		$sp1 = strpos($html, "<h1>Atari Mobile Daily Stats Summary");
+		$sp1 = strpos($html, "<div class='parms_passed'>");
 		$sp2 = strpos(substr($html, $sp1), "</body>")-1;
 		$tableData=substr($html, $sp1, $sp2);
 		
@@ -327,7 +327,7 @@ class Menu {
 					}
 					foreach ( $this->levels[2]->menu as $key3 => $value3 ) {
 						
-						if ( $value3['parent'] == $value2['id'] && $value2['parent'] == $value['id'] && $value['id'] == $this->top ) {
+						if ( $value3['parent'] == $this->menu && $value3['parent'] == $value2['id'] && $value2['parent'] == $value['id'] && $value['id'] == $this->top ) {
 							echo "<tr><td class='nav'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='report_view.php?_report=".$this->getReportFromMenu($value3['id'])."'>$key3</a></td></tr>\n";
 						}
 					}

@@ -21,19 +21,33 @@
 	$query = TRUE;
 
 	// Check passed parms
-        $options = getopt("x");
+        $options = getopt("xs:");
+
         if ( array_key_exists('x',$options) ) {
                 $query = FALSE;
+        }
+        if ( array_key_exists('s',$options) ) {
+                $sub_id = $options['s'];
         }
 
 	// Connect to the DB
 	$db = db_connect();
 
 	//Read the subscriptions list
-	$sql = "SELECT * from reporting.report_subscriptions
-		WHERE (subscription_frequency='daily' or
-		weekday(curdate()) = 0 )
-		ORDER by subscription_prty";
+	if ( isset($sub_id) ) { 
+		$sql = "SELECT * from reporting.report_subscriptions
+			WHERE (subscription_frequency='daily' or
+			weekday(curdate()) = 0 )
+			AND subscription_id=$sub_id
+			ORDER by subscription_prty";
+	}
+	else {
+		$sql = "SELECT * from reporting.report_subscriptions
+			WHERE (subscription_frequency='daily' or
+			weekday(curdate()) = 0 )
+			AND subscription_code=0
+			ORDER by subscription_prty";
+	}
 
 	// Get the results
 	$result = run_sql($db, $sql);
@@ -52,13 +66,17 @@
 	if ( $query ) { 
 		foreach ($subscriptions as $index => $value) {
 			//print_r($value);
+			// Run queries
 			$subscription->run($value);
+			// Email results
+			$subscription->eMail($value);
 		}
 	}
-
-	// Now we are going to email them
-	foreach ($subscriptions as $index => $value) {
-		//print_r($value);
-		$subscription->eMail($value);
+	else {
+		// This just outputs the subscription
+		foreach ($subscriptions as $index => $value) {
+			//print_r($value);
+			$subscription->eMail($value);
+		}
 	}
 ?>

@@ -193,9 +193,11 @@ class ReportParms
 		return $this->reportName;
 	}
 	
-	function setreportName($name) {
+	function setReportName($name) {
+		// Set the name
 		$this->reportName=$name;
 	}
+
 	function dump() {
 		if ( $this->nparms > 0 ) {
 			var_dump($this->parameters);
@@ -295,7 +297,7 @@ class Query
 		}
 	}
 
-	function setreportName($name) {
+	function setReportName($name) {
 		$this->reportName=$name;
 	}
 
@@ -708,6 +710,7 @@ class Report
 {
 
 	public $reportName;
+	public $reportTitle;
 	public $parms;
 	public $passedParms;
 	public $nPassedParms;
@@ -725,6 +728,7 @@ class Report
 	function __construct($name, $parms) {
 
 		$this->reportName=$name;
+		$this->setReportTitle();
 		$this->csv=$this->reportName."_".date('Ymdhis').".csv";
 
         	// Parse the report
@@ -754,7 +758,7 @@ class Report
 						foreach ( $value as $index => $query ) {
 
 							$q = new Query($query);
-							$q->setreportName($name);
+							$q->setReportName($name);
 
 							$t = new Table($query);
 							$t->csv=$this->csv;
@@ -766,7 +770,7 @@ class Report
 					}
 					else {
 						$q = new Query($value);
-						$q->setreportName($name);
+						$q->setReportName($name);
 
 						$t = new Table($value);
 						$t->csv=$this->csv;
@@ -809,7 +813,7 @@ class Report
 				break;
 				case 'parm':
 					$this->parms = new ReportParms($this->XML['parm']);
-					$this->parms->setreportName($name);
+					$this->parms->setReportName($name);
 				break;
 				case 'batch':
 					$this->batch = TRUE;
@@ -858,6 +862,22 @@ class Report
        	 	}
 		fwrite($fh,"\n");
 		fclose($fh);
+	}
+
+	function setReportTitle() {
+	
+		// Also get the title
+		$db=db_connect();
+		$sql="SELECT title
+		      FROM reporting.navigation
+		      WHERE report='".$this->reportName."'
+		      LIMIT 1;";
+
+		$result=run_sql($db, $sql);
+
+		while ($row = $result[0]->fetch_assoc()) {
+			$this->reportTitle=$row['title'];
+		}
 	}
 
 	function getNumberPassedParms() {
@@ -991,14 +1011,14 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 		if ( $this->batch == FALSE ) { 
 	        	$this->HTML.="<div class='parms_passed'>\n<h1>$this->title</h1>\n";
 	        	$this->HTML.="<p>".str_replace("\n","<br>",$this->description)."</p>\n";
-	        	$this->HTML.="<h2>Report Name: $this->reportName</h2>\n";
-	       		$this->HTML.="<h3>Parameters Passed:</h3>\n";
+	        	$this->HTML.="<h2>Report Title: $this->reportTitle</h2>\n";
+	       		$this->HTML.="<p>Parameters Passed:\n";
 	        	$this->HTML.="<table>\n";
 	        	foreach ( $this->passedParms as $key => $value ) {
 	                	$this->HTML.="<tr><td>$key:&nbsp;</td><td>$value</td></tr>\n";
 	        	}
 	        	$this->HTML.="</table>\n";
-	        	$this->HTML.="<br>\n";
+	        	$this->HTML.="</p>\n";
 	        	$this->HTML.="<form method='post' action='report_download.php'>\n";
 	        	$this->HTML.="<input name='report' type='hidden' value='" . $this->csv . "'>\n";
 	        	$this->HTML.="<input type='submit' value='Download CSV'>\n";
@@ -1015,15 +1035,15 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 
 		// Results
 
-		$found = FALSE;
+		$c_found = FALSE;
 
 		// Do we want our charts at the top?
 		if ( isset($this->charts) ) {
 			foreach ( $this->charts as $name => $chart ) {
 				if ( $chart->position == "top") {
-					if ( !$found ) {
+					if ( !$c_found ) {
 						$this->HTML.="<table id='charts'>\n<tr>\n";
-						$found = TRUE;
+						$c_found = TRUE;
 					}
 					if ( $chart->break ) {
 						$this->HTML.="</tr>\n<tr>\n";
@@ -1036,13 +1056,14 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 					}
 				}
 			}
-			if ( $found ) {
+			if ( $c_found ) {
 				// Finish off table
 				$this->HTML.="</tr></table>\n";
 			}
 		}
 
 		$t_found = FALSE;
+		$c_found = FALSE;
 
 		foreach ( $this->tables as $name => $table ) {
 			if ( !$table->isHidden ) {
@@ -1066,13 +1087,40 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 
 			if ( isset($this->charts) ) {
 				foreach ( $this->charts as $index => $chart ) {
-					if ( $chart->query == $name && $chart->position != "top") {
-						$this->HTML.="<td class='chart'><div id='chart_div".$chart->name."'></div></td></tr>\n";
-						$c_found = TRUE;
+					if ( $chart->query == $name && $chart->position == "below") {
+						if ( !$c_found ) {
+							if ( $t_found) { 
+								$this->HTML.="</tr>\n<tr><td>&nbsp;</td><td>&nbsp;</td></tr>\n<tr><td><table id='charts'>\n<tr>\n";
+							}
+							else {
+								$this->HTML.="<table id='charts'>\n<tr>\n";
+							}
+							$c_found = TRUE;
+						}
+						if ( $chart->break ) {
+							$this->HTML.="</tr>\n<tr>\n";
+						}
+						if ( isset($chart->width) ) {
+							$this->HTML.="<td class='chart' width='".$chart->width."%'><div id='chart_div".$chart->name."'></div></td>\n";
+						}
+						else {
+							$this->HTML.="<td class='chart'><div id='chart_div".$chart->name."'></div></td>\n";
+						}
 					}
+					else if ( $chart->query == $name && $chart->position != "top") {
+						$this->HTML.="<td class='chart'><div id='chart_div".$chart->name."'></div></td></tr>";
+					}
+				}
+				if ( $c_found && $t_found ) {
+					// Finish off table
+					$this->HTML.="<td>&nbsp;</td></tr></table>\n";
+				}
+				else if ( $c_found ) {
+					$this->HTML.="</tr></table>\n";
 				}
 			}
 		}
+
 		if ( $t_found ) {
 			$this->HTML.="</table>\n";
 		}

@@ -59,7 +59,7 @@ class Subscription
 		// Now Email the results
 		$crlf = "\n";
 		$hdrs = array(
-              	'Subject' => "Atari Analytics: Report: ".$row['subscription_name'].". Run completed successfully at ".$lastRun['report_endts'].".",
+              	'Subject' => "Atari Analytics: Report: ".$row['subscription_title'].". Run completed successfully at ".$lastRun['report_endts'].".",
               );
 
 		$mime = new Mail_mime(array('eol' => $crlf));

@@ -21,6 +21,8 @@ table.parms {
 table.parms td {
     padding: .5em;
     text-align: left;
+    white-space: nowrap;
+
 }
 
 
@@ -34,6 +36,7 @@ table.header {
 table.header td {
 	vertical-align: top;
 	padding:5;
+	white-space: nowrap;
 }
 
 table.log {
@@ -50,6 +53,7 @@ table.log th {
 	color: black;
 	border: solid 1px black;
 	padding:5;
+	white-space: nowrap;
 }
 
 table.log td {
@@ -58,6 +62,7 @@ table.log td {
 	text-align: left;
 	border: solid 1px black;
 	padding:5;
+	white-space: nowrap;
 }
 
 table {
@@ -66,10 +71,12 @@ table {
 
 td { 
 	text-align: left;
+	white-space: nowrap;
 }
 
 th {
 	vertical-align: top;
+	white-space: nowrap;
 }
 
 tr { 
@@ -79,6 +86,7 @@ tr {
 td.chart {
 	border: solid 2px black;
 	border-collapse: collapse;
+	white-space: nowrap;
 }
 
 table.report {
@@ -96,6 +104,7 @@ table.report td {
 	font-size: small;
 	font-weight: normal !important;
 	padding:5;
+	white-space: nowrap;
 	border: solid 2px black;
 }
 
@@ -113,6 +122,7 @@ table.report th {
 	color: white;
 	padding:5;
 	border: solid 2px black;
+	white-space: nowrap;
 }
 table.nav {
 	font-weight: bold;
@@ -126,6 +136,7 @@ table.nav td {
 	text-align: left;
 	vertical-align: top;
 	padding:10;
+	white-space: nowrap;
 
 }
 
@@ -135,6 +146,7 @@ th {
 	vertical-align: top;
 	font-weight: bold;
 	padding:5;
+	white-space: nowrap;
 }
 
 div.parms_passed {
@@ -148,6 +160,21 @@ div.parms_passed th, td {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	font-size: small;
 	font-weight: normal !important;
+	white-space: nowrap;
+}
+
+div.parms_passed h1 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: large;
+	font-weight: bold;
+}
+
+div.parms_passed h2 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: medium;
+	font-weight: bold;
 }
 
 h1 {
@@ -157,6 +184,12 @@ h1 {
 	font-weight: bold;
 }
 
+h2 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	text-align: left;
+	font-size: medium;
+	font-weight: bold;
+}
 img.report {   
 	display: block;
 	margin-left: auto;
