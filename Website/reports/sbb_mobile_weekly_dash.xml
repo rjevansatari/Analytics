@@ -1,0 +1,531 @@
+<xml>
+<title>
+Mobile Super Bunny Breakout Weekly Dashboard - $date
+</title>
+<description>
+This report provides an extended view of stats by day for SBB Free and SBB Paid. The daily stats are as follows:
+
+o DAU
+o Installs
+o Sessions and session length
+o MAU
+o Engagement
+o D1, D7, D30 Retention
+o Free to paid conversion
+
+The report shows day on day (DoD) and week on week (WoW) % changes as well as 30 day trends.
+
+NOTE: Same Day Conversion reports users who install the Free and Paid version on the same day.
+NOTE: Next Day and Day Three conversion reports users installing the paid version 1 and 3 days after installing the free version respectively. 
+NOTE: The first set of tables shows SBB Free and Paid overall, the next set of tables breaks down each game.
+NOTE: MAU and Retention metric are calculated from tracked events and may not reflect true monthly user counts or installs. 
+NOTE: Revenue is gross and unadjusted for Apple and Zynga revenue share as well as development and recoupment costs. 
+</description>
+<query hidden="true" time="10" name="overalldailystats" title="Super Bunny Breakout Overall 30 Day Stats Trends">
+drop table if exists tmp.a_metrics_sbb_daily_dash;
+
+#DAU
+create table tmp.a_metrics_sbb_daily_dash engine=myisam
+as
+select stat_date,
+game_id, 
+client_id, 
+cast('dau' as char(13)) as metric,
+cast(sum(value) as decimal(10,2)) as value 
+from star.s_game_day
+where metric='ActiveUsersByDay'
+and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Installs
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'installs' as metric,
+sum(value) as value
+from star.s_game_day
+where metric='NewUsers'
+and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Sessions
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'sessions' as metric,
+1.0*sum(case when metric='Sessions' then value else 0 end)/(1.0*sum(case when metric='ActiveUsersByDay' then value else 0 end)) as value
+from star.s_game_day
+where metric in ('ActiveUsersByDay','Sessions')
+and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Sessions
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+-2 as game_id, 
+-2 as client_id, 
+'sessions' as metric,
+1.0*sum(case when metric='Sessions' then value else 0 end)/sum(case when metric='ActiveUsersByDay' then value else 0 end) as value
+from star.s_game_day
+where metric in ('ActiveUsersByDay','Sessions')
+and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Session Length
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'sessionlen' as metric,
+sum(value) as value
+from star.s_game_day
+where metric='MedianSessionLength'
+and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Session Length
+insert into tmp.a_metrics_sbb_daily_dash
+select a.stat_date,
+-2 as game_id,
+-2 as client_id,
+'sessionlen' as metric,
+sum(a.value*b.value)/sum(b.value) as value
+from tmp.a_metrics_sbb_daily_dash a, tmp.a_metrics_sbb_daily_dash b
+where a.metric in ('sessionlen') 
+and b.metric in ('dau')
+and a.stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and a.stat_date=b.stat_date
+and a.game_id=b.game_id
+and a.game_id in (21,24)
+and a.client_id=b.client_id
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#MAU
+drop table if exists tmp.dau_sbb_daily_dash;
+
+create table tmp.dau_sbb_daily_dash(index(user_id)) engine=MyIsam
+as 
+select
+game_id,
+client_id,
+user_id, 
+stat_date
+from star.s_user_day
+where game_id in (21,24)
+and client_id=1
+group by 1,2,3,4
+;
+
+# 7 Day Averages
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'7dau' as metric,
+round(sum(value)/7.0) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau_sbb_daily_dash a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 6 day) and d.date
+and d.date between date_sub('$date', interval 30 day) and '$date'
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+# Summarise MAU
+insert into tmp.a_metrics_sbb_daily_dash
+select stat_date,
+game_id, 
+client_id, 
+'mau' as metric,
+sum(value) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau_sbb_daily_dash a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 29 day) and d.date
+and d.date between date_sub('$date', interval 30+7 day) and '$date'
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Summarise Revenue
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT stat_date,
+game_id,
+client_id,
+'revenue' as metric,
+sum(revenue/0.7) as value
+from star.app_figures a
+where stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and a.game_id in (21,24)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Summarise Units
+insert into tmp.a_metrics_sbb_daily_dash
+SELECT stat_date,
+game_id,
+client_id,
+'units' as metric,
+sum(downloads) as value
+from star.app_figures a
+where stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and a.game_id in (21,24)
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+select stat_date as Date,
+max(a.dau) as DAU,
+max(a.installs) as Installs,
+max(a.sessions) as "Sessions/DAU",
+max(a.mau) as MAU,
+max(a.engagement) as Engagement,
+max(a.revenue) as Revenue,
+max(a.units) as Units,
+sum(b.dau)/(30) as Avg_DAU,
+sum(b.installs)/(30) as Avg_Installs,
+sum(b.sessions)/(30) as Avg_Sessions,
+sum(b.mau)/(30) as Avg_MAU,
+max(b.engagement) as Avg_Engagement,
+sum(b.revenue)/(30) as Avg_Revenue,
+sum(b.units)/(30) as Avg_Units
+from 
+(
+	select stat_date,
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	max(case when metric='sessions' and game_id=-2 then value else 0 end) as sessions,
+	max(case when metric='sessionlen' and game_id=-2 then value else 0 end) as sessionlen,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub('$date', interval 30 day) and '$date'
+	group by 1
+) a,
+( 
+	select 
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	max(case when metric='sessions' and game_id=-2 then value else 0 end) as sessions,
+	max(case when metric='sessionlen' and game_id=-2 then value else 0 end) as sessionlen,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_sbb_daily_dash
+	where stat_date between date_sub('$date', interval 30 day) and '$date'
+) b
+group by 1
+order by 1
+;
+
+</query>
+<parm name="date" text="Date" type="date"/>
+<column name="Sessions/DAU" format="decimal"/>
+<column name="Date" format="date"/>
+<column name='DAU' format='number' />
+<column name='Installs' format='number' />
+<column name='Free Installs' format='number' />
+<column name='MAU' format='number' />
+<column name='Engagement' format='percent' />
+<column name="Revenue" format="currency"/>
+<column name="Units" format="number"/>
+<column name='DoD % Change' format='percent' />
+<column name='WoW % Change' format='percent' />
+<column name='DAU DoD % Change' format='percent' />
+<column name='DAU WoW % Change' format='percent' />
+<column name='Installs DoD % Change' format='percent' />
+<column name='Installs WoW % Change' format='percent' />
+<column name='MAU DoD % Change' format='percent' />
+<column name='MAU WoW % Change' format='percent' />
+<column name='Rev DoD % Change' format='percent' />
+<column name='Rev WoW % Change' format='percent' />
+<column name='Revenue' format='currency' />
+<column name='Revenue/DAU' format='currency' />
+<column name="Avg_DAU" format="number"/>
+<column name="Avg_Installs" format="number"/>
+<column name="Avg_MAU" format="number"/>
+<column name="Avg_Engagement" format="percent"/>
+<column name="Avg_Revenue" format="currency"/>
+<column name="Avg_Units" format="number"/>
+<column name="D+0 Conversion" format="percent"/>
+<column name="D+1 Conversion" format="percent"/>
+<column name="D+2 Conversion" format="percent"/>
+<column name="D+3 Conversion" format="percent"/>
+<column name="D+4 Conversion" format="percent"/>
+<column name="D+5 Conversion" format="percent"/>
+<column name="D+6 Conversion" format="percent"/>
+<column name="D+7 Conversion" format="percent"/>
+<column name="Total Paid Conversion" format="percent"/>
+<column name="D1%" format="percent"/>
+<column name="D2%" format="percent"/>
+<column name="D3%" format="percent"/>
+<column name="D4%" format="percent"/>
+<column name="D5%" format="percent"/>
+<column name="D6%" format="percent"/>
+<column name="D7%" format="percent"/>
+<column name="D8%" format="percent"/>
+<column name="D9%" format="percent"/>
+<column name="D10%" format="percent"/>
+<column name="D11%" format="percent"/>
+<column name="D12%" format="percent"/>
+<column name="D13%" format="percent"/>
+<column name="D14%" format="percent"/>
+<column name="D15%" format="percent"/>
+<column name="D16%" format="percent"/>
+<column name="D17%" format="percent"/>
+<column name="D18%" format="percent"/>
+<column name="D19%" format="percent"/>
+<column name="D20%" format="percent"/>
+<column name="D21%" format="percent"/>
+<column name="D22%" format="percent"/>
+<column name="D23%" format="percent"/>
+<column name="D24%" format="percent"/>
+<column name="D25%" format="percent"/>
+<column name="D26%" format="percent"/>
+<column name="D27%" format="percent"/>
+<column name="D28%" format="percent"/>
+<column name="D29%" format="percent"/>
+<column name="D30%" format="percent"/>
+<column name="Splash Started" format="percent"/>
+<column name="Splash Completed" format="percent"/>
+<column name="Play Started" format="percent"/>
+<column name="Game Started" format="percent"/>
+<column name="Armory Started" format="percent"/>
+<column name="Armory Completed" format="percent"/>
+<column name="Round Two" format="percent"/>
+<column name="Revolver" format="percent"/>
+<column name="PepperBox" format="percent"/>
+<column name="Musket" format="percent"/>
+<column name="CannonPistol" format="percent"/>
+<column name="TarBallGun" format="percent"/>
+<column name="Rifile" format="percent"/>
+<column name="Carbine" format="percent"/>
+<column name="ShortCarbine" format="percent"/>
+<column name="BuffaloGun" format="percent"/>
+<column name="OldSmokey" format="percent"/>
+<column name="LilTimmy" format="percent"/>
+<column name="BullDogGatlin" format="percent"/>
+<column name="BuzzSawyer" format="percent"/>
+<column name="DynOGun" format="percent"/>
+<column name="TelsaLightning" format="percent"/>
+<column name="AppleJack" format="percent"/>
+<column name="MotarMusket" format="percent"/>
+<column name="Attachment" format="percent"/>
+<column name="Barrel" format="percent"/>
+<column name="BiPod" format="percent"/>
+<column name="Capacitor" format="percent"/>
+<column name="Cartridge" format="percent"/>
+<column name="EngravedGrip" format="percent"/>
+<column name="ForeGrip" format="percent"/>
+<column name="Grip" format="percent"/>
+<column name="HipSling" format="percent"/>
+<column name="Igniter" format="percent"/>
+<column name="Loader" format="percent"/>
+<column name="Magazine" format="percent"/>
+<column name="QuickDrawGrip" format="percent"/>
+<column name="RapidLoader" format="percent"/>
+<column name="SideGrip" format="percent"/>
+<column name="Sight" format="percent"/>
+<column name="Stock" format="percent"/>
+<chart position="below" name="Overall_DAU" query="overalldailystats" type="LineChart" title="Overall DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="below" name="Overall_Installs" query="overalldailystats" type="LineChart" title="Overall Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="below" name="Overall_MAU" query="overalldailystats" type="LineChart" title="Overall MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart break="true" position="below" name="Overall_Revenue" query="overalldailystats" type="LineChart" title="Overall Revenue(iOS) 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+<column name='Avg_Revenue'/>
+</chart>
+<chart position="below" name="Overall_Units" query="overalldailystats" type="LineChart" title="Overall Purchases (iOS) 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+<column name='Avg_Units'/>
+</chart>
+<chart position="below" name="Overall_Engagement" query="overalldailystats" type="LineChart" title="Overall Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+<chart position="below" name="Free_DAU" query="freedailystats" type="LineChart" title="Free DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="below" name="Free_Installs" query="freedailystats" type="LineChart" title="Free Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="below" name="Free_MAU" query="freedailystats" type="LineChart" title="Free MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart position="below" break="true" name="Free_Engagement" query="freedailystats" type="LineChart" title="Free Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+<chart position="below" name="Paid_DAU" query="paiddailystats" type="LineChart" title="Paid DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="below" name="Paid_Installs" query="paiddailystats" type="LineChart" title="Paid Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="below" name="Paid_MAU" query="paiddailystats" type="LineChart" title="Paid MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart position="below" break="true" name="Paid_Revenue" query="paiddailystats" type="LineChart" title="Paid Revenue(iOS) 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+<column name='Avg_Revenue'/>
+</chart>
+<chart position="below" name="Paid_Units" query="paiddailystats" type="LineChart" title="Paid Purchases (iOS) 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+<column name='Avg_Units'/>
+</chart>
+<chart position="below" name="Paid_Engagement" query="paiddailystats" type="LineChart" title="Paid Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+</xml>

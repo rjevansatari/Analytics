@@ -1,6 +1,5 @@
 <?php
-	error_reporting(E_ALL);
-	ini_set('memory_limit', '3584M');
+	ini_set('memory_limit', '512M');
 	//date_default_timezone_set('America/New_York');
 
 	//Set up debugging
@@ -10,7 +9,7 @@
 	require_once 'inc/config.php';
 
 	//check options
-	$options = getopt("ds:e:z:r:k:g:c:o:u");
+	$options = getopt("ds:e:f:r:k:g:c:o:u");
 	if ( array_key_exists('d',$options) ) {
 		$debug = Log::singleton('console');
 	}
@@ -26,15 +25,14 @@
 	}
 	$fh = fopen($output_file, 'w') or die ("ERROR: Could not open output file.\n");
 
-	if ( $options['z'] ) {
-		$input_file=$options['z'];
-		debugger("Parsing passed file.");
-		parse_file($input_file,$options['g'],$options['c'], $options);
+	if ( $options['f'] ) {
+		$input_file=$options['f'];
+		parse_file($input_file,$options['g'],$options['c']);
 		exit;
 	}
 	if ( $options['r'] ) {
 		$resource=get_file($options['r']);
-		parse_file($resource,$options['g'],$options['c'], $options);
+		parse_file($resource,$options['g'],$options['c']);
 		exit;
 	}
 
@@ -153,73 +151,28 @@ function parse_file($file, $game_id, $device_id, $options) {
     global $start_date;
     global $end_date;
 
-    $user_count=0;
+    $offset=0;
 
-    # Do we have a zipped file or not?
-    if ( substr($file, -3, 3) == '.gz' ) {
-	debugger("Got file, attempting to open it.");
-	$gz = @gzopen($file, 'rb');
+    $gz = @gzopen($file, 'rb', $use_include_path);
 
-	    if ($gz) {
+    if ($gz) {
+        $data = '';
+        while (!gzeof($gz)) {
+            $data .= gzread($gz, 4096);
+        }
+        gzclose($gz);
+    } 
 
-		# Check to see if we got a report
-	        $buffer = gzread($gz, 4096);
-		debugger("Buffer=$buffer\n");
-    		# Check to make sure we have a valid file
-    		if ( strpos($buffer, "<head><title>302 Found</title></head>" ) ) {
-			echo "NOTE: " . date("Y-m-d H:i:s") . ": 302 Redirect found for $start_date to $end_date. Waiting...\n";
-			return FALSE;
-    		}
+    # Check to make sure we have a valid file
+    if ( strpos($data, "<head><title>302 Found</title></head>" ) ) {
+	echo "NOTE: " . date("Y-m-d H:i:s") . ": 302 Redirect found for $start_date to $end_date. Waiting...\n";
+	return FALSE;
+    }
 
-		# So, we must have a valid JSON
-    		$offset=strpos($buffer, 'sessionEvents');
-		if ( $offset == FALSE ) {
-			return FALSE;
-		}
-
-		# Read the file
-		while (!gzeof($gz)) {
-
-    			$user_start=strpos($buffer, '{"u":');
-			$user_end=strpos($buffer, '{"u":', $user_start+5);
-
-			# Do we have one? If not, keep reading until we do
-			if ( $user_end == FALSE  && !gzeof($gz) ) {
-
-				$data=substr($buffer, $user_start);
-				# Save current bufferr
-				while ( $user_end == FALSE && !gzeof($gz) ) {
-            				$buffer = gzread($gz, 4096);
-					debugger("Buffer While Loop=$buffer\n");
-					$user_end=strpos($buffer, '{"u":');
-					if ( $user_end == FALSE ) {
-						$data .= $buffer;
-					}
-				}
-				$str=$data . substr($buffer,0,$user_end-1);
-				debugger("Str1=$str\n");
-			}
-			else {
-				$str=substr($buffer,$user_start,$user_end-$user_start-1);
-				debugger("Str2=$str\n");
-			}
-                	$user_count++;
-			parse_user($str, $game_id, $device_id, $options);
-			# Get new buffer string
-			$buffer=substr($buffer, $user_end);
-			# Get User start tag
-    			$user_start=strpos($buffer, '{"u":');
-        	}
-        	gzclose($gz);
-    	} 
-	else {
-		echo "ERROR: Could not open gzip file. Exiting...\n";
-		exit (4);
-	}
-   }
-   exit;
+    $offset=strpos($data, 'sessionEvents', $offset);
 
     if ( $offset != FALSE ) { 
+    	$user_start=strpos($data, '{"u":', $offset);
         $user_count=0;
     	while ( $user_start != FALSE ) {
 		$user_end=strpos($data, '{"u":', $user_start+5);
@@ -388,6 +341,8 @@ function get_xml($url) {
 	$p = xml_parser_create();
 	xml_parse_into_struct($p, $xml, $vals, $index);
 	xml_parser_free($p);
+	echo $values;
+	echo $index;
         return $data;
     } else {
         return FALSE;

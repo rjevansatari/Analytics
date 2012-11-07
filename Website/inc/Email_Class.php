@@ -89,7 +89,7 @@ class Subscription
                         LIMIT 1";
 
                 $result = run_sql($db, $sql);
-                $row = $result[0]->fetch_assoc();
+                $row = db_fetch_assoc($result[0]);
 
 		mysqli_close($db);
 

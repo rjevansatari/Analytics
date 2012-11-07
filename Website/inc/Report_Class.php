@@ -73,7 +73,7 @@ class ReportParameter {
 			
                 	if ( $result = run_sql($this->db, $this->query) ) {
 
-                       		while ($row = $result[0]->fetch_assoc()) {
+                       		while ($row = db_fetch_assoc($result[0])) {
                                		if ( isset($this->default) ) {
                                        		if ( $this->default == $row[$this->display] ) {
                                                		echo "<option value='" . $row[$this->value] . "' select='selected'>" . $row[$this->display] . "</option>\n";
@@ -386,7 +386,7 @@ class Table extends Report
 
 		$record=0;
 
-		while ($row = $result->fetch_assoc()) {
+		while ($row = db_fetch_assoc($result)) {
 
 			if ( $record > 0 ) {
 				$col=0;
@@ -545,7 +545,7 @@ class Chart extends Report
                     var data".$this->name." = google.visualization.arrayToDataTable([\n";
 
 		$record=0;
-		while ($row = $result->fetch_assoc()) {
+		while ($row = db_fetch_assoc($result)) {
 
 			if ( $record > 0 ) {
 				$col=0;
@@ -875,7 +875,7 @@ class Report
 
 		$result=run_sql($db, $sql);
 
-		while ($row = $result[0]->fetch_assoc()) {
+		while ($row = db_fetch_assoc($result[0])) {
 			$this->reportTitle=$row['title'];
 		}
 	}

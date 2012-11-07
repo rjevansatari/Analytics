@@ -22,7 +22,7 @@
 		$output_file = "$CSV/app_figures_day.csv";
 	}
 
-	$app_figures_request = "$CSV/app_figures_request_$start_date.csv";
+	$app_figures_request = "$CSV/app_figures_request.csv";
 
 	$fh_r = fopen($app_figures_request, 'w') or die ("ERROR: Could not open app figures request file.\n");
 	$fh_o = fopen($output_file, 'w') or die ("ERROR: Could not open output file.\n");

@@ -4,5 +4,7 @@
 	$REPORT = $CSV;
 	
 	define('__PEAR__', FALSE);
+	define('__MSQL__', TRUE);
+	define('__PSQL__', FALSE);
 
 ?>

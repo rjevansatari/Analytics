@@ -7,6 +7,8 @@ NOTE: All revenue data is gross.
 </description>
 <query hidden="true" time="10" name="dailystats" title="Atari 30 Day Stats Trends">
 drop table if exists tmp.a_metrics_daily_stats;
+drop table if exists tmp.dau_daily_dash;
+
 create table tmp.a_metrics_daily_stats engine=myisam
 as
 select stat_date,
@@ -36,7 +38,7 @@ order by 1,2,3,4
 ;
 
 #MAU
-create temporary table tmp.dau(index(stat_date, user_id)) engine=myisam
+create temporary table tmp.dau_daily_dash(index(stat_date, user_id)) engine=myisam
 as
 select game_id, client_id, stat_date, user_id
 from star.s_user_day
@@ -56,7 +58,7 @@ from
 a.game_id,
 a.client_id,
 count(distinct a.user_id) as value
-from tmp.dau a, lookups.d_date d
+from tmp.dau_daily_dash a, lookups.d_date d
 where a.stat_date between date_sub(d.date, interval 6 day) and d.date
 and d.date between date_sub(date_sub(curdate(), interval 1 day), interval $days day) and date_sub(curdate(), interval 1 day)
 group by 1,2,3
@@ -76,7 +78,7 @@ from
 a.game_id,
 a.client_id,
 count(distinct a.user_id) as value
-from tmp.dau a, lookups.d_date d
+from tmp.dau_daily_dash a, lookups.d_date d
 where a.stat_date between date_sub(d.date, interval 29 day) and d.date
 and d.date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
 group by 1,2,3
@@ -84,6 +86,22 @@ group by 1,2,3
 group by 1,2,3,4
 order by 1,2,3,4
 ;
+
+create temporary table tmp.fx_rate
+as
+select b.currency_code, b.fx_rate
+from 
+(
+	select currency_code, max(fx_date) as fx_date
+	from lookups.l_fx_rate
+	group by 1
+) a,
+lookups.l_fx_rate b
+where a.currency_code=b.currency_code
+and a.fx_date=b.fx_date
+group by 1,2
+;
+
 
 create temporary table tmp.revenue(index(stat_date, currency_code)) engine=myisam
 as
@@ -97,7 +115,7 @@ group by 1,2
 
 insert into tmp.revenue
 select stat_date,
-'USA' as currency_code,
+'USD' as currency_code,
 sum(revenue/0.7) as gross_revenue
 from star.app_figures
 where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
@@ -105,19 +123,20 @@ and game_id in (21,24)
 group by 1,2
 ;
 
-
 insert into tmp.a_metrics_daily_stats
 SELECT stat_date,
 -2,
 -2,
 'revenue' as metric,
-sum(gross_revenue/case when fx_rate is null then 1 else fx_rate end) as value
+sum(gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) as value
 from tmp.revenue a
 left join
 lookups.l_fx_rate b
 on a.stat_date=b.fx_date
 and a.currency_code=b.currency_code
-where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+join tmp.fx_rate c
+on a.currency_code=c.currency_code
+where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
 group by 1,2,3,4
 order by 1,2,3,4
 ;

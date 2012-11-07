@@ -5,7 +5,7 @@ Installs By Date
 <description>
 This report shows the installs by date for a selected game and or client for a specified date range.
 </description>
-<query name="install" title="DAU By Date">
+<query name="installs" title="Installs By Date">
 	select stat_date as Date,
 	sum(value) as Installs
 	from star.s_game_day
@@ -34,7 +34,7 @@ This report shows the installs by date for a selected game and or client for a s
 <vaxis options="{baselineColor: 'black', title: 'Install',   titleTextStyle: {color: '#FF0000'}}"/>
 <legend options="{position: 'none'}"/>
 <column name="Date"/>
-<column name="DAU"/>
+<column name="Installs"/>
 </chart>
 </xml>
 

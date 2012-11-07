@@ -41,7 +41,7 @@ class Menu {
                 	WHERE id=$menu";
 
         	$result = run_sql($this->db, $sql);
-        	$row = $result[0]->fetch_assoc();
+        	$row = db_fetch_assoc($result[0]);
 
         	if ( isset($row['parent']) ) {
                 	return $row['parent'];
@@ -56,7 +56,7 @@ class Menu {
                 	WHERE parent=$menu";
 
         	$result = run_sql($this->db, $sql);
-        	$row = $result[0]->fetch_assoc();
+        	$row = db_fetch_assoc($result[0]);
 
         	if ( isset($row['count']) ) {
                 	if ( $row['count'] > 0 ) {
@@ -91,7 +91,7 @@ class Menu {
 
 	        // Process the results and return the level
         	$result = run_sql($this->db, $sql);
-        	$row = $result[0]->fetch_assoc();
+        	$row = db_fetch_assoc($result[0]);
 
 	        if ( isset($row['level']) ) {
 	        	return $row['level']+1;
@@ -110,7 +110,7 @@ class Menu {
                 	WHERE report='".$report."';";
 
         	$result = run_sql($this->db, $sql);
-        	$row = $result[0]->fetch_assoc();
+        	$row = db_fetch_assoc($result[0]);
 
         	if ( !isset($row['id']) ) {
                 	echo "<br>ERROR: Could not get report for menu item $menu.<br>\n";
@@ -126,7 +126,7 @@ class Menu {
                 	WHERE id=$menu";
 
         	$result = run_sql($this->db, $sql);
-        	$row = $result[0]->fetch_assoc();
+        	$row = db_fetch_assoc($result[0]);
 
         	if ( !isset($row['report']) ) {
                 	echo "<br>ERROR: Could not get report for menu item $menu.<br>\n";
@@ -205,7 +205,7 @@ class Menu {
 			echo "</tr>\n";
 		}
 
-		while ($row = $result[0]->fetch_assoc()) {
+		while ( $row = db_fetch_assoc($result[0]) ) {
 
 			echo "<tr>";
 
@@ -240,7 +240,7 @@ class Menu {
 			LIMIT 1";
 
 		$result = run_sql($this->db, $sql);
-		$row = $result[0]->fetch_assoc();
+		$row = db_fetch_assoc($result[0]);
 		$html = $row['report_html'];
 		//$date = substr($row['report_parms'],strpos($row['report_parms'],'date=')+5,10);
 		
@@ -390,7 +390,7 @@ class Level extends Menu
 
 	        $result = run_sql($this->db, $sql);
 
-		while ($row = $result[0]->fetch_assoc()) {
+		while ($row = db_fetch_assoc($result[0])) {
                 	$this->menu[$row['name']]=array('id' => $row['id'], 'parent' => $row['parent']);
         	}
 	}
