@@ -18,18 +18,14 @@
 	debugger("getops : " . print_r($options,TRUE));
 
 	if ( array_key_exists('o',$options) ) { 
-		$output_file_sessions = "$CSV/" . $options['o'] . '_sessions.csv';
-		$output_file_events = "$CSV/" . $options['o'] . '_events.csv';
-		$report_file = "$REPORT/" . "report_" . $options['o'] . ".gz";
+		$output_file = "$CSV/" . $options['o'];
+		$report_file = "$REPORT/" . "report_" . basename($output_file, ".csv") . ".gz";
 	}
 	else {
-		$output_file_sessions = "$CSV/output_sessions.csv";
-		$output_file_events = "$CSV/output_events.csv";
+		$output_file = "$CSV/output.csv";
 	}
-	
-	$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
-	$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
-	
+	$fh = fopen($output_file, 'w') or die ("ERROR: Could not open output file.\n");
+
 	if ( array_key_exists('z',$options) ) {
 		$input_file=$options['z'];
 		debugger("Parsing passed file.");
@@ -43,10 +39,22 @@
 	}
 
 	//Start and end dates
-	$start_date = $options['s'];
-	$end_date = $options['e'];
+	if ( array_key_exists('s',$options) ) {
+		$start_date = $options['s'];
+	}
+	else {
+		$start_date=date("Y-m-d", strtotime("-1 day"));;
+		// Set default start
+	}
+	if ( array_key_exists('e',$options) ) {
+		$end_date = $options['e'];
+	}
+	else {
+		// Set default end
+		$end_date=$start_date;
+	}
 
-	if ( $options['k'] ) {
+	if ( array_key_exists('k',$options) ) {
 		$apiKey="AND apikey='" . $options['k'] . "'";
 	}
 	else { 
@@ -65,56 +73,57 @@
 	$sql = "SELECT game_name, game_id, device_id, apikey
 		FROM lookups.l_flurry_game
 		WHERE 1=1
+		AND raw_extract=1
 		$apiKey
 		ORDER BY game_name";
 
-	$results = run_sql($mdb2,$sql);
+	$results = run_sql_all($mdb2,$sql);
 
-	while ($row = $results->fetchRow(MDB2_FETCHMODE_ASSOC)) {
-	
+	# Make All The Requets For Data
+	$requests=$results;
+	$json_requests=array();
+
+	while ( count($requests) > 0 ) {
+	foreach ( $requests as $index => $row ) {
+
 		//Check to see if we have a report
 		$url = $url_root . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
 
 		debugger("URL : $url");
-		$wait_flag=1;
-		$count=1;
 		$json=get_json($url);
 
-		while ( $wait_flag == 1 ) {
-		
-			if ( $json != FALSE ) {
-				foreach ($json as $key => $value) {
-					debugger("JSON KEY : $key, JSON VALUE : $value.");
-					if ( $key == "code" ) {
-					}
-					if ( $key == "message" ) {
-						echo "NOTE: Report is already running.  Waiting... : count=$count.\n";
-						sleep(120);
-						$wait_flag=1;
-						$json=get_json($url);
-						$count++;
-					}
-					if ( $key == 'report' ) {
-						$wait_flag=0;
-					}
+		if ( $json != FALSE ) {
+			foreach ($json as $key => $value) {
+				debugger("JSON KEY : $key, JSON VALUE : $value.");
+				if ( $key == "code" ) {
+				}
+				if ( $key == "message" ) {
+					echo "NOTE: Report for game " . $row['game_id'] . " already running.\n";
+					unset($requests[$index]);
+				}
+				if ( $key == 'report' ) {
+					echo "NOTE: Got report for game " . $row['game_id'] . ".\n";
+					$json_requests[]=$json;
+					unset($requests[$index]);
 				}
 			}
-			else {
-				echo "NOTE: " . date("Y-m-d H:i:s") .  ": Returned JSON was FALSE for $start_date to $end_date! Waiting...\n";
-				sleep(120);
-				$wait_flag=1;
-				$json=get_json($url);
-			}
 		}
+		sleep(1);
+	}
+	}
+	print_r($json_requests);
+	exit;
+
+	# Now Check for Valid Report Ids
+	foreach ( $json_request as $index => $value ) {
 
 		$count=1;
 
-		if ( $key == 'report' ) {
+		if ( array_key_exists($value['report']) ) {
 			debugger("DEBUG: value : " . print_r($value,TRUE));
-			debugger("DEBUG : Got report URL : " . $value['@reportUri']);
+			debugger("DEBUG : Got report URL : " . $value['report']['@reportUri']);
 			echo "NOTE: " . date("Y-m-d H:i:s") . ": Got report to process for $start_date to $end_date. Waiting...\n";
-			sleep(60);
-			$report = get_json($value['@reportUri']);
+			$report = get_json($value['report']['@reportUri']);
 			$count=1;
 			
 			$rc=FALSE;
@@ -141,8 +150,7 @@
 		}
 	}
 
-	fclose($fhs);
-	fclose($fhe);
+	fclose($fh);
 
 function debugger($msg) {
 
@@ -185,7 +193,7 @@ function parse_file($file, $game_id, $device_id, $options) {
 		# Read the file
 		while (!gzeof($gz)) {
 
-    		$user_start=strpos($buffer, '{"u":');
+    			$user_start=strpos($buffer, '{"u":');
 			$user_end=strpos($buffer, '{"u":', $user_start+5);
 
 			# Do we have one? If not, keep reading until we do
@@ -246,8 +254,7 @@ function parse_file($file, $game_id, $device_id, $options) {
 
 function parse_user($str, $game_id, $client_id, $options) {
 
-	global $fhs;
-	global $fhe;
+	global $fh;
 
 	$json=json_decode($str);
 	if ( $json != FALSE ) {	
@@ -272,20 +279,20 @@ function parse_user($str, $game_id, $client_id, $options) {
 			}
 		}
 		//SESSION
-       	$record= "$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $datetime->format('Y-m-d H:i:s') . "'\n";
-		fwrite($fhs, $record);
+       		$record= "$game_id, $client_id,'SESSION','" . $user . "','" . $version . "','" . $device . "','" . $datetime->format('Y-m-d H:i:s') . "','" . 'session' . "',,,\n";
+		fwrite($fh, $record);
 
 		//EVENTS
 		if ( !isset($options['u']) ) { 
 			foreach ($event as $key => $value) {
-                        	$record="$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "','" . $value['event'] . "',";
+                        	$record="$game_id, $client_id,'EVENT','" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "','" . $value['event'] . "',";
                                 if ( count($value['parameters']) > 0 ) {
                                         foreach ($value['parameters'] as $parameter_key => $parameter_value) {
-						fwrite($fhe, $record . "'" . $parameter_key . "','" . $parameter_value . "'\n");
+						fwrite($fh, $record . "'" . $parameter_key . "','" . $parameter_value . "'\n");
 					}
 				}
                                 else {
-					fwrite($fhe, $record . ",\n");
+					fwrite($fh, $record . ",\n");
                                 }
 			}
 		}

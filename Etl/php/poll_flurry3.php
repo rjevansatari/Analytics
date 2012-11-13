@@ -61,6 +61,8 @@
 
 	$mdb2=db_connect();
 
+	$events=get_events($mdb2);
+
 	//Get a list of games and API keys
 	$sql = "SELECT game_name, game_id, device_id, apikey
 		FROM lookups.l_flurry_game
@@ -244,10 +246,28 @@ function parse_file($file, $game_id, $device_id, $options) {
     return TRUE;
 }
 
+# Get a list of events so that we can map them pre database load
+function get_events($mdb2) {
+	$sql = "SELECT distinct event_name, event_id
+                FROM lookups.l_event
+		ORDER by 1":
+
+	$results = run_sql($mdb2,$sql);
+	$list=array[];
+	while ($row = $results->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+		$list[$row['event_name']] = $row['event_id'];
+	}
+	return $list;
+}
+
+function add_event($event_name) {
+"
+}
 function parse_user($str, $game_id, $client_id, $options) {
 
 	global $fhs;
 	global $fhe;
+	global $events;
 
 	$json=json_decode($str);
 	if ( $json != FALSE ) {	

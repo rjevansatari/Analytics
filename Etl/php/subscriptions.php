@@ -18,13 +18,17 @@
 	// Include the report class
 	require_once (__ROOT__.'/inc/Email_Class.php');
 
-	$query = TRUE;
+	$query = FALSE;
+	$email = FALSE;
 
 	// Check passed parms
-        $options = getopt("xs:");
+        $options = getopt("exs:");
 
+        if ( array_key_exists('e',$options) ) {
+                $email = TRUE;
+        }
         if ( array_key_exists('x',$options) ) {
-                $query = FALSE;
+                $query = TRUE;
         }
         if ( array_key_exists('s',$options) ) {
                 $sub_id = $options['s'];
@@ -72,7 +76,7 @@
 			$subscription->eMail($value);
 		}
 	}
-	else {
+	if ( $email ) {
 		// This just outputs the subscription
 		foreach ($subscriptions as $index => $value) {
 			//print_r($value);
