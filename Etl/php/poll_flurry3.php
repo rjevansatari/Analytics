@@ -30,6 +30,9 @@
 	$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
 	$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
 	
+	$mdb2=db_connect();
+	$events=get_events();
+
 	if ( array_key_exists('z',$options) ) {
 		$input_file=$options['z'];
 		debugger("Parsing passed file.");
@@ -58,10 +61,6 @@
         $api_key="&apiKey=";
 	$start="&startDate=" . $start_date;
 	$end="&endDate=" . $end_date;
-
-	$mdb2=db_connect();
-
-	$events=get_events($mdb2);
 
 	//Get a list of games and API keys
 	$sql = "SELECT game_name, game_id, device_id, apikey
@@ -143,6 +142,7 @@
 		}
 	}
 
+	$mdb2->disconnect();
 	fclose($fhs);
 	fclose($fhe);
 
@@ -247,13 +247,17 @@ function parse_file($file, $game_id, $device_id, $options) {
 }
 
 # Get a list of events so that we can map them pre database load
-function get_events($mdb2) {
+function get_events() {
+
+	global $mdb2;
+
 	$sql = "SELECT distinct event_name, event_id
-                FROM lookups.l_event
-		ORDER by 1":
+                FROM lookups.l_event_test
+		ORDER by 1";
 
 	$results = run_sql($mdb2,$sql);
-	$list=array[];
+	$list=array();
+
 	while ($row = $results->fetchRow(MDB2_FETCHMODE_ASSOC)) {
 		$list[$row['event_name']] = $row['event_id'];
 	}
@@ -261,7 +265,21 @@ function get_events($mdb2) {
 }
 
 function add_event($event_name) {
-"
+
+	global $mdb2;
+
+	$sql="INSERT INTO lookups.l_event_test(event_name) VALUES ('" . $event_name . "');";
+	$rc=$mdb2->exec($sql);
+
+	if ( PEAR::isError($rc)) {
+		die ("ERROR: Event update failed : " . $rc->getMessage()); 
+	}
+
+	echo "NOTE: New event added : $event_name.\n";
+	$latest_events=get_events();
+
+	return $latest_events;
+	
 }
 function parse_user($str, $game_id, $client_id, $options) {
 
@@ -292,13 +310,19 @@ function parse_user($str, $game_id, $client_id, $options) {
 			}
 		}
 		//SESSION
-       	$record= "$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $datetime->format('Y-m-d H:i:s') . "'\n";
+		$record= "$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $datetime->format('Y-m-d H:i:s') . "'\n";
 		fwrite($fhs, $record);
 
 		//EVENTS
 		if ( !isset($options['u']) ) { 
+	
 			foreach ($event as $key => $value) {
-                        	$record="$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "','" . $value['event'] . "',";
+                        	if ( array_key_exists($value['event'], $events) ) { 
+					$record="$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "'," . $events[$value['event']] . ",";
+				}
+				else {
+					$events=add_event($value['event']);
+				}
                                 if ( count($value['parameters']) > 0 ) {
                                         foreach ($value['parameters'] as $parameter_key => $parameter_value) {
 						fwrite($fhe, $record . "'" . $parameter_key . "','" . $parameter_value . "'\n");

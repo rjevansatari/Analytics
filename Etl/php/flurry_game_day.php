@@ -158,7 +158,7 @@ function debugger($msg) {
 
 function add_value($fh, $metric, $game_id, $device_id) {
 	
-	if ( array_key_exists('@value',$metric['day']) ) {
+	if ( is_array($metric['day']) && array_key_exists('@value',$metric['day']) ) {
 		$record="$game_id,$device_id,'" . $metric['day']['@date'] . "','" . $metric['@metric'] . "'," . $metric['day']['@value'] . "\n"; 
 		$rc=fwrite($fh,$record);
 	}

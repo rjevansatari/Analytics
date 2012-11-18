@@ -72,8 +72,6 @@
 			//print_r($value);
 			// Run queries
 			$subscription->run($value);
-			// Email results
-			$subscription->eMail($value);
 		}
 	}
 	if ( $email ) {

@@ -9,7 +9,18 @@
 	require_once 'inc/config.php';
 
 	//check options
-	$options = getopt("ds:e:z:r:k:g:c:o:u");
+	//d-debug
+	//s-startdate
+	//e-enddate
+	//z-gzip input
+	//r-resource
+	//k-api key
+	//g-game id
+	//c-client id
+	//u-only do sessions (no events)
+	//x-do not parse file, only x-tract
+	
+	$options = getopt("ds:e:z:r:k:g:c:o:u:x");
 
 	debugger("getops : " . print_r($options,TRUE));
 
@@ -23,20 +34,33 @@
 		$output_file_events = "$CSV/output_events.csv";
 	}
 	
-	$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
-	$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
-
+	//Get a list of events and parms
 	$events=get_events();
+	$parms=get_parms();
 
 	if ( array_key_exists('z',$options) ) {
+
+		$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+		$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
+
 		$input_file=$options['z'];
 		debugger("Parsing passed file.");
 		parse_file($input_file,$options['g'],$options['c'], $options);
+
+		fclose($fhs);
+		fclose($fhe);
 		exit;
 	}
 	if ( array_key_exists('r',$options) ) {
+
+		$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+		$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
+
 		$resource=get_file($options['r']);
 		parse_file($resource,$options['g'],$options['c'], $options);
+
+		fclose($fhs);
+		fclose($fhe);
 		exit;
 	}
 
@@ -140,10 +164,25 @@
 			   }
 
 			   $file=get_file($value['@reportUri'], $report_file);
+
 			   echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file parsing started for $start_date to $end_date.\n";
-			   $rc=parse_file($file, $row['game_id'],$row['device_id'], $options);
+
+			   if ( !array_key_exists('x',$options) ) {
+
+				$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+				$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
+
+				$rc=parse_file($file, $row['game_id'],$row['device_id'], $options);
+				fclose($fhs);
+				fclose($fhe);
+				
+				echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file parsing complete for $start_date to $end_date.\n";
+			   }
+			   else {
+				echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file was not parsed for $start_date to $end_date.\n";
+				$rc = TRUE;
+			   }
 			}
-			echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file parsing complete for $start_date to $end_date.\n";
 		}
 		else {
 			echo "NOTE: " . date("Y-m-d H:i:s") . ": Could not get a valid report for $file for $start_date to $end_date.\n";
@@ -152,8 +191,6 @@
 
 	mysqli_free_result($results[0]);
 	mysqli_close($db);
-	fclose($fhs);
-	fclose($fhe);
 
 function debugger($msg) {
 
@@ -280,6 +317,46 @@ function get_events() {
 	return $list;
 }
 
+function get_parms() {
+
+        echo "NOTE: Memory Usage: get_parms: " . memory_get_usage() . "\n";
+
+	$db=db_connect();
+
+	$sql = "SELECT distinct lower(parm_name) as parm_name, parm_id
+                FROM lookups.l_parm
+		ORDER by 1";
+
+	$results = run_sql($db,$sql);
+	$list=array();
+
+	while ($row = db_fetch_assoc($results[0])) {
+		$list[$row['parm_name']] = $row['parm_id'];
+	}
+
+	mysqli_free_result($results[0]);
+	mysqli_close($db);
+	return $list;
+}
+
+function add_parm($parm_name) {
+
+        echo "NOTE: Memory: Usage add_parm: " . memory_get_usage() . "\n";
+
+	$db=db_connect();
+	$sql="INSERT INTO lookups.l_parm(parm_name) VALUES ('" . strtolower($parm_name). "'); COMMIT; ";
+	$results = run_sql($db,$sql);
+
+	echo "NOTE: New parm added : $parm_name.\n";
+
+	$latest_parms=get_parms();
+
+	mysqli_free_result($results[0]);
+	mysqli_close($db);
+	return $latest_parms;
+	
+}
+
 function add_event($event_name) {
 
         echo "NOTE: Memory: Usage add_event: " . memory_get_usage() . "\n";
@@ -337,14 +414,21 @@ function parse_user($str, $game_id, $client_id, $options) {
 	
 			foreach ($event as $key => $value) {
                         	if ( array_key_exists(strtolower($value['event']), $events) ) { 
-					$record="$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "'," . $events[$value['event']] . ",";
+					$record="$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "'," . $events[strtolower($value['event'])] . ",";
 				}
 				else {
 					$events=add_event(strtolower($value['event']));
+					$record="$game_id,$client_id,'" . $user . "','" . $version . "','" . $device . "','" . $value['time'] . "'," . $events[strtolower($value['event'])] . ",";
 				}
                                 if ( count($value['parameters']) > 0 ) {
                                         foreach ($value['parameters'] as $parameter_key => $parameter_value) {
-						fwrite($fhe, $record . "'" . $parameter_key . "','" . $parameter_value . "'\n");
+                        			if ( array_key_exists(strtolower($parameter_key), $parms) ) { 
+							fwrite($fhe, $record . "'" . $parms[strtolower($parameter_key)] . "','" . $parameter_value . "'\n");
+						}
+						else {
+							$parms=add_parms(strtolower($parameter_key));
+							fwrite($fhe, $record . "'" . $parms[strtolower($parameter_key)] . "','" . $parameter_value . "'\n");
+						}
 					}
 				}
                                 else {
