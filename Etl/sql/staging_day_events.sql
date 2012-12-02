@@ -7,15 +7,15 @@ use staging;
 drop table if exists staging.stage_event_day;
 
 CREATE TABLE staging.stage_event_day (
- `game_id` smallint NOT NULL,
- `client_id` smallint NOT NULL,
+ `game_id` smallint(11) NOT NULL,
+ `client_id` smallint(11) NOT NULL,
  `device_id` varchar(80) NOT NULL,
  `version` varchar(16) NOT NULL,
  `device_gen` varchar(80) NOT NULL,
  `log_ts` timestamp NOT NULL,
- `event` varchar(255) NOT NULL,
- `parm` varchar(32) NOT NULL,
- `value` varchar(32) NOT NULL
+ `event_id` smallint NOT NULL,
+ `parm_id` smallint,
+ `value` varchar(32)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1
 ;
 
@@ -27,11 +27,11 @@ SHOW WARNINGS;
 
 # Create all the indexes that we need
 CREATE INDEX device_id  on staging.stage_event_day(device_id(10));
-CREATE INDEX event      ON staging.stage_event_day(event(25));
 
 SELECT date(log_ts) as Date,
 count(*)
 from staging.stage_event_day
+where date(log_ts)<curdate()
 group by 1
 ;
 
@@ -58,7 +58,7 @@ staging.min_ts b
 ON a.game_id=b.game_id
 and a.client_id=b.client_id
 and timestamp(a.stat_date, a.stat_time)<b.log_ts
-and a.stat_date>=date_sub(curdate(), interval 30 day)
+and a.stat_date>=date_sub(curdate(), interval 45 day)
 WHERE b.game_id is NULL
 and b.client_id is NULL
 ;
@@ -74,62 +74,27 @@ staging.min_ts b
 ON a.game_id=b.game_id
 and a.client_id=b.client_id
 and timestamp(a.stat_date, a.stat_time)<b.log_ts
-and a.stat_date>=date_sub(curdate(), interval 30 day)
+and a.stat_date>=date_sub(curdate(), interval 45 day)
 ;
 
-# Assign New Events
-drop table if exists staging.events;
-
-create table staging.events ENGINE=MyiSAM
-select distinct event
-from staging.stage_event_day
-order by 1
-;
-
-SHOW WARNINGS;
-
-# Assign New Event Type
-
-drop table if exists staging.new_events;
-
-create table staging.new_events ENGINE=MyiSAM
-select distinct a.event
-from staging.events a
-left join
-lookups.l_event b
-on a.event=b.event_name
-where b.event_name is NULL
-order by 1
-;
-
-SHOW WARNINGS;
-
-# Insert the new events
-insert into lookups.l_event(event_name)
-select distinct event
-from staging.new_events
-;
-
-SHOW WARNINGS;
-
+# Remove any duplicates when we do this - there can be many
 insert into staging.s_user_event(game_id, client_id, device_gen_id, user_id, 
-                              stat_date, stat_time, event_id, parm, value)
+                              stat_date, stat_time, event_id, parm_id, value)
 select a.game_id,
 a.client_id, 
 b.device_gen_id,
 b.user_id, 
 date(a.log_ts),
 time(a.log_ts),
-c.event_id,
-a.parm,
+a.event_id,
+a.parm_id,
 a.value
 from staging.stage_event_day a
 join star.s_device_master b
 on a.device_id=b.device_id
-join lookups.l_event c
-on a.event=c.event_name
-where date(a.log_ts)>=date_sub(curdate(), interval 30 day) 
+where date(a.log_ts)>=date_sub(curdate(), interval 45 day) 
 and a.log_ts<now()
+group by 1,2,3,4,5,6,7,8,9
 ;
 
 SHOW WARNINGS;

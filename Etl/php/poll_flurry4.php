@@ -341,7 +341,7 @@ function get_parms() {
 
 function add_parm($parm_name) {
 
-        echo "NOTE: Memory: Usage add_parm: " . memory_get_usage() . "\n";
+        debugger("Memory: Usage add_parm: " . memory_get_usage() . "\n");
 
 	$db=db_connect();
 	$sql="INSERT INTO lookups.l_parm(parm_name) VALUES ('" . strtolower($parm_name). "'); COMMIT; ";
@@ -351,7 +351,6 @@ function add_parm($parm_name) {
 
 	$latest_parms=get_parms();
 
-	mysqli_free_result($results[0]);
 	mysqli_close($db);
 	return $latest_parms;
 	
@@ -359,7 +358,7 @@ function add_parm($parm_name) {
 
 function add_event($event_name) {
 
-        echo "NOTE: Memory: Usage add_event: " . memory_get_usage() . "\n";
+        debugger("Memory: Usage add_event: " . memory_get_usage() . "\n");
 
 	$db=db_connect();
 	$sql="INSERT INTO lookups.l_event(event_name) VALUES ('" . strtolower($event_name). "'); COMMIT; ";
@@ -369,7 +368,6 @@ function add_event($event_name) {
 
 	$latest_events=get_events();
 
-	mysqli_free_result($results[0]);
 	mysqli_close($db);
 	return $latest_events;
 	
@@ -380,6 +378,7 @@ function parse_user($str, $game_id, $client_id, $options) {
 	global $fhs;
 	global $fhe;
 	global $events;
+	global $parms;
 
         debugger("Memory Usage: parse_user: " . memory_get_usage() . "\n");
 
@@ -426,7 +425,7 @@ function parse_user($str, $game_id, $client_id, $options) {
 							fwrite($fhe, $record . "'" . $parms[strtolower($parameter_key)] . "','" . $parameter_value . "'\n");
 						}
 						else {
-							$parms=add_parms(strtolower($parameter_key));
+							$parms=add_parm(strtolower($parameter_key));
 							fwrite($fhe, $record . "'" . $parms[strtolower($parameter_key)] . "','" . $parameter_value . "'\n");
 						}
 					}
