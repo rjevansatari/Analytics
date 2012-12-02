@@ -20,9 +20,10 @@
 
 	$query = FALSE;
 	$email = FALSE;
+	$user='';
 
 	// Check passed parms
-        $options = getopt("exs:");
+        $options = getopt("exs:u:");
 
         if ( array_key_exists('e',$options) ) {
                 $email = TRUE;
@@ -32,6 +33,9 @@
         }
         if ( array_key_exists('s',$options) ) {
                 $sub_id = $options['s'];
+        }
+        if ( array_key_exists('u',$options) ) {
+                $user = $options['u'];
         }
 
 	// Connect to the DB
@@ -58,7 +62,7 @@
 	$subscription = new Subscription();
 
 	// Read through the results
-	while ($row = $result[0]->fetch_assoc()) {
+	while ($row = db_fetch_assoc($result[0])) {
 		$subscriptions[]=$row;
 	}
 	
@@ -72,13 +76,17 @@
 			//print_r($value);
 			// Run queries
 			$subscription->run($value);
+			if ( $email ) {
+				$subscription->eMail($value, $user);
+			}
+
 		}
 	}
-	if ( $email ) {
+	elseif ( $email ) {
 		// This just outputs the subscription
 		foreach ($subscriptions as $index => $value) {
 			//print_r($value);
-			$subscription->eMail($value);
+			$subscription->eMail($value, $user);
 		}
 	}
 ?>

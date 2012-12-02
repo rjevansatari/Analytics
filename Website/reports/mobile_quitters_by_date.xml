@@ -16,8 +16,8 @@ as
 select stat_date,
 user_id
 from star.s_user_day
-where game_id=$gameid
-and client_id=$clientid
+where game_id=$gameid$
+and client_id=$clientid$
 group by 1,2
 ;
 
@@ -46,7 +46,7 @@ select a.user_id,
 d.date as quit_date
 from tmp.last_date a, lookups.d_date d
 where datediff(d.date, last_date)=31
-and d.date between '$startdate' and '$enddate'
+and d.date between '$startdate$' and '$enddate$'
 group by 1,2
 ;
 
@@ -54,7 +54,7 @@ group by 1,2
 select quit_date as Date,
 count(distinct user_id) as Quitters
 from tmp.quitters
-where quit_date between '$startdate' and '$enddate'
+where quit_date between '$startdate$' and '$enddate$'
 group by 1,2
 order by 1
 ;

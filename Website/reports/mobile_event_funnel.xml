@@ -15,7 +15,7 @@ from star.s_user_event
 where game_id=game_id
 and client_id=client_id
 and event_id in($eventid1,$eventid2,$eventid3,$eventid4,$eventid5)
-and stat_date between '$startdate' and '$enddate'
+and stat_date between '$startdate$' and '$enddate$'
 group by 1,2,3
 ;
 

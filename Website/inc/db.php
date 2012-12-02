@@ -1,13 +1,13 @@
 <?php
-	require_once 'PEAR.php';
-	require_once 'MDB2.php';
+	//require_once 'PEAR.php';
+	//require_once 'MDB2.php';
 
 function db_connect($dbtype='mysql') {
 	$dbhost='localhost';
 	$dbuser='analytics';
 	$dbpass='4T4r!an@lyt5';
 
-	if ( __PEAR__ ) {	
+	if ( $dbtype == 'pear' ) {	
 		$dsn = array(
 		'phptype'  => 'mysql',
 		'username' => $dbuser,
@@ -51,6 +51,14 @@ function db_fetch_assoc($results, $dbtype='mysql') {
 		$row=pg_fetch_assoc($results);
 	}
 	return $row;
+}
+function data_seek($result, $row=0, $dbtype='mysql') {
+	if ( $dbtype == 'mysql' ) {
+ 		mysqli_data_seek($result, $row);
+	}
+	else if ( $dbtype == 'postgres' ) {
+ 		pg_result_seek($result, $row);
+	}
 }
 
 function run_sql($db, $sql, $dbtype='mysql') {

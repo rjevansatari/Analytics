@@ -13,16 +13,16 @@ select start_date as stat_date,
 currency_of_proceeds as currency_code,
 sum(units*net_revenue)/0.7 as gross_revenue
 from star.itunes_sales
-where start_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+where start_date between date_sub(date_sub(curdate(), interval 1 day), interval $days$+7 day) and date_sub(curdate(), interval 1 day)
 group by 1,2
 ;
 
 	select stat_date as Date,
 	sum(value) as DAU
 	from star.s_game_day
-	where case when '$gameid'='-2' then game_id else $gameid end = game_id
-	and case when '$clientid'='-2' then client_id else $clientid end = client_id
-	and stat_date between '$startdate' and '$enddate'
+	where case when '$gameid$'='-2' then game_id else $gameid$ end = game_id
+	and case when '$clientid$'='-2' then client_id else $clientid$ end = client_id
+	and stat_date between '$startdate$' and '$enddate$'
 	and metric='ActiveUsersByDay'
 	group by 1
 	order by 1

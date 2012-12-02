@@ -20,7 +20,7 @@ as
 select stat_date,
 user_id
 from star.s_user_day
-and client_id=$clientid
+and client_id=$clientid$
 group by 1,2
 ;
 
@@ -38,7 +38,7 @@ as select user_id,
 min(stat_date) as install_date
 from tmp.dau
 group by 1
-having min(stat_date) between '$startdate' and '$enddate'
+having min(stat_date) between '$startdate$' and '$enddate$'
 ;
 
 -- Reacts
@@ -57,7 +57,7 @@ b.stat_date as prev_date
 from tmp.dau a, tmp.dau_2 b
 where a.user_id=b.user_id
 and a.stat_date>b.stat_date
-and a.stat_date between '$startdate' and '$enddate'
+and a.stat_date between '$startdate$' and '$enddate$'
 ) a
 group by 1,2
 ;
@@ -82,7 +82,7 @@ select a.user_id,
 d.date as quit_date
 from tmp.last_date a, lookups.d_date d
 where datediff(d.date, last_date)=31
-and d.date between '$startdate' and '$enddate'
+and d.date between '$startdate$' and '$enddate$'
 group by 1,2
 ;
 
@@ -95,7 +95,7 @@ select 'install' as metric,
 install_date as stat_date,
 count(distinct user_id) as value
 from tmp.installs
-WHERE install_date between '$startdate' and '$enddate'
+WHERE install_date between '$startdate$' and '$enddate$'
 
 group by 1,2
 ;
@@ -105,7 +105,7 @@ select 'quitter' as metric,
 quit_date as stat_date,
 count(distinct user_id) as value
 from tmp.quitters
-where quit_date between '$startdate' and '$enddate'
+where quit_date between '$startdate$' and '$enddate$'
 group by 1,2
 order by 1
 ;
@@ -116,7 +116,7 @@ stat_date,
 count(distinct user_id) as value
 from tmp.reacts
 where datediff(stat_date, prev_date) > 30
-and stat_date between '$startdate' and '$enddate'
+and stat_date between '$startdate$' and '$enddate$'
 group by 1,2
 order by 2
 ;
@@ -127,7 +127,7 @@ stat_date,
 count(distinct user_id) as value
 from tmp.dau a, lookups.d_date d
 where a.stat_date between date_sub(d.date,interval 29 day) and d.date
-and stat_date between '$startdate' and '$enddate'
+and stat_date between '$startdate$' and '$enddate$'
 group by 1,2
 ;
 
@@ -139,7 +139,7 @@ sum(case when metric='react' then value else 0 end) as Reacts,
 sum(case when metric in ('install','react') then value else 0 end)-
 sum(case when metric='quitter' then value else 0 end) as "Net Growth"
 from tmp.a_metrics
-where stat_date between '$startdate' and '$enddate'
+where stat_date between '$startdate$' and '$enddate$'
 group by 1
 ;
 </query>

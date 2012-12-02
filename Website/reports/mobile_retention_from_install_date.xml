@@ -11,9 +11,9 @@ as
 select user_id, 
 date(stat_date) as stat_date
 from star.s_user_day
-where game_id=$gameid
-and client_id=$clientid
-and stat_date between '$startdate' and '$enddate'
+where game_id=$gameid$
+and client_id=$clientid$
+and stat_date between '$startdate$' and '$enddate$'
 group by 1,2
 ;
 
@@ -24,8 +24,8 @@ as
 select user_id, 
 min(stat_date) as install_date
 from star.s_user_day
-where game_id=$gameid
-and client_id=$clientid
+where game_id=$gameid$
+and client_id=$clientid$
 group by 1
 ;
 
@@ -39,7 +39,7 @@ count(distinct i.user_id) as cnt
 FROM tmp.installs i 
 left join tmp.dau d 
 on i.user_id  = d.user_id
-where install_date between '$startdate' and '$enddate'
+where install_date between '$startdate$' and '$enddate$'
 GROUP BY 1,2
 ;
 

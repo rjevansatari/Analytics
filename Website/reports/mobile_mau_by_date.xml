@@ -16,9 +16,9 @@ game_id,
 client_id, 
 user_id
 from star.s_user_day
-where case when '$gameid'='-2' then game_id   else $gameid   end = game_id
-and case when '$clientid'='-2' then client_id else $clientid end = client_id
-and stat_date between date_sub('$startdate', interval 29 day) and '$enddate'
+where case when '$gameid$'='-2' then game_id   else $gameid$   end = game_id
+and case when '$clientid$'='-2' then client_id else $clientid$ end = client_id
+and stat_date between date_sub('$startdate$', interval 29 day) and '$enddate$'
 group by 1,2,3,4
 ;
 
@@ -36,7 +36,7 @@ group by 1,2,3
 select stat_date as Date,
 sum(value) as MAU
 from tmp.a_metrics
-where stat_date between '$startdate' and '$enddate'
+where stat_date between '$startdate$' and '$enddate$'
 order by 1
 ;
 

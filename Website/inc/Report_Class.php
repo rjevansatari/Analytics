@@ -318,7 +318,7 @@ class Query
 
 		if ( $this->getNumberOfParms()>0 ) {	
 			foreach ($this->parms->parameters as $index => $parameter) {
-	        		$sql=str_replace("$".$parameter->column, $parameter->value, $sql);
+	        		$sql=str_replace("$".$parameter->column."$", $parameter->value, $sql);
 			}
 		}
 
@@ -404,10 +404,10 @@ class Table extends Report
 					}
 					//CSV
 					if ( $col == 1 ) {
-						fwrite($fh, "$value");
+						fwrite($fh, '"'.$value.'"');
 					}
 					else {
-						fwrite($fh,",$value");
+						fwrite($fh,',"'.$value.'"');
 					}
 					
 				}
@@ -419,6 +419,7 @@ class Table extends Report
 				foreach ($row as $key => $value) {
 					$col++;
 					$table->setHeaderContents($record, $col, ucfirst($key));
+					//CSV
 					if ( $col == 1 ) {
 						fwrite($fh, "$key");
 					}
@@ -443,10 +444,10 @@ class Table extends Report
 					}
 					// CSV
 					if ( $col == 1 ) {
-						fwrite($fh, "$value");
+						fwrite($fh, '"'.$value.'"');
 					}
 					else {
-						fwrite($fh,",$value");
+						fwrite($fh,',"'.$value.'"');
 					}
 				}
 				fwrite($fh,"\n");

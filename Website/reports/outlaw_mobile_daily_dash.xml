@@ -1,6 +1,6 @@
 <xml>
 <title>
-Mobile Outlaw Daily Dashboard - $date
+Mobile Outlaw Daily Dashboard
 </title>
 <description>
 This report provides daily stats for outlaw. The daily stats are as follows:
@@ -19,10 +19,45 @@ NOTE: FTUE and Gun purchase/upgrade trends reflect install cohorts of the last 7
 NOTE: MAU is calculated from logged events and may reflect true monthly users.
 NOTE: Revenue is gross.
 NOTE: Retention is based on users who have created a game event so is likely over inflated. 
+NOTE: A 10% sample is used to track events.
 </description>
 <query hidden="true" time="10" name="dailystats" title="Outlaw 30 Day Stats Trends">
 drop table if exists tmp.a_metrics_outlaw_daily_dash;
 drop table if exists tmp.dau_outlaw_daily_dash;
+drop table if exists tmp.installs_outlaw_daily_dash;
+drop table if exists tmp.retention_summary_outlaw_daily_dash;
+drop table if exists tmp.events_outlaw_daily_dash;
+drop table if exists tmp.revenue_outlaw_daily_dash;
+drop table if exists tmp.fx_rate_outlaw_daily_dash;
+drop table if exists tmp.l_event_outlaw_daily_dash;
+drop table if exists tmp.ftue_outlaw_daily_dash;
+drop table if exists tmp.gunpurchase_outlaw_daily_dash;
+drop table if exists tmp.gunupgrade_outlaw_daily_dash;
+commit;
+
+create table tmp.l_event_outlaw_daily_dash
+as
+select event_id, event_name,
+case when substr(event_name,1,4)='ftue' then 'FTUE' 
+     when substr(event_name,1,20)='event_user_purchased' then 'PRCD'
+     when substr(event_name,1,19)='event_user_upgraded' then 'UPGD'
+end as type         
+from lookups.l_event
+where substr(event_name,1,4)='ftue' or
+      substr(event_name,1,20)='event_user_purchased' or
+      substr(event_name,1,19)='event_user_upgraded'
+;
+
+create table tmp.events_outlaw_daily_dash(index(user_id))
+as
+select user_id, a.event_id, stat_date, stat_time, parm_id, value
+from star.s_user_event a, tmp.l_event_outlaw_daily_dash e
+where game_id=23
+and client_id=1
+and a.stat_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+and user_id % 10 = 1
+and a.event_id=e.event_id
+;
 
 #DAU
 create table tmp.a_metrics_outlaw_daily_dash engine=myisam
@@ -34,7 +69,7 @@ cast('dau' as char(13)) as metric,
 cast(sum(value) as decimal(10,2)) as value
 from star.s_game_day
 where metric='ActiveUsersByDay'
-and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 and game_id in (23)
 and client_id=1
 group by 1,2,3,4
@@ -50,7 +85,7 @@ client_id,
 sum(value) as value
 from star.s_game_day
 where metric='NewUsers'
-and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 and game_id in (23)
 and client_id=1
 group by 1,2,3,4
@@ -66,7 +101,7 @@ client_id,
 1.0*sum(case when metric='Sessions' then value else 0 end)/(1.0*sum(case when metric='ActiveUsersByDay' then value else 0 end)) as value
 from star.s_game_day
 where metric in ('ActiveUsersByDay','Sessions')
-and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 and game_id in (23)
 and client_id=1
 group by 1,2,3,4
@@ -82,7 +117,7 @@ client_id,
 sum(value) as value
 from star.s_game_day
 where metric='MedianSessionLength'
-and stat_date between date_sub('$date', interval 30+7 day) and '$date'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 and game_id in (23)
 and client_id=1
 group by 1,2,3,4
@@ -90,7 +125,6 @@ order by 1,2,3,4
 ;
 
 #MAU
-
 create table tmp.dau_outlaw_daily_dash(index(user_id)) engine=MyIsam
 as
 select
@@ -99,7 +133,7 @@ client_id,
 user_id,
 stat_date
 from star.s_user_day
-where game_id in (23)
+where game_id=23
 and client_id=1
 group by 1,2,3,4
 ;
@@ -118,7 +152,7 @@ a.client_id,
 count(distinct a.user_id) as value
 from tmp.dau_outlaw_daily_dash a, lookups.d_date d
 where a.stat_date between date_sub(d.date, interval 6 day) and d.date
-and d.date between date_sub('$date', interval 30 day) and '$date'
+and d.date between date_sub('$date$', interval 30 day) and '$date$'
 group by 1,2,3
 ) a
 group by 1,2,3,4
@@ -139,14 +173,14 @@ a.client_id,
 count(distinct a.user_id) as value
 from tmp.dau_outlaw_daily_dash a, lookups.d_date d
 where a.stat_date between date_sub(d.date, interval 29 day) and d.date
-and d.date between date_sub('$date', interval 30+7 day) and '$date'
+and d.date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 group by 1,2,3
 ) a
 group by 1,2,3,4
 order by 1,2,3,4
 ;
 
-create temporary table tmp.fx_rate
+create table tmp.fx_rate_outlaw_daily_dash
 as
 select b.currency_code, b.fx_rate
 from
@@ -162,7 +196,7 @@ group by 1,2
 ;
 
 # Revenue
-create temporary table tmp.revenue_outlaw_daily_dash(index(stat_date, currency_code)) engine=myisam
+create table tmp.revenue_outlaw_daily_dash(index(stat_date, currency_code)) engine=myisam
 as
 select start_date as stat_date,
 23 as game_id,
@@ -170,7 +204,7 @@ select start_date as stat_date,
 currency_of_proceeds as currency_code,
 sum(units*net_revenue)/0.7 as gross_revenue
 from star.itunes_sales a
-where start_date between date_sub('$date', interval 30+7 day) and '$date'
+where start_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 and upper(sku) like '%OUTLAW%'
 group by 1,2,3,4
 ;
@@ -187,9 +221,9 @@ left join
 lookups.l_fx_rate b
 on a.stat_date=b.fx_date
 and a.currency_code=b.currency_code
-join tmp.fx_rate c
+join tmp.fx_rate_outlaw_daily_dash c
 on a.currency_code=c.currency_code
-where stat_date between date_sub('$date', interval 30+7 day) and '$date'
+where stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 group by 1,2,3,4
 order by 1,2,3,4
 ;
@@ -202,7 +236,7 @@ SELECT start_date as stat_date,
 'units' as metric,
 sum(case when net_revenue>0 then units else 0 end) as value
 from star.itunes_sales a
-where start_date between date_sub('$date', interval 30+7 day) and '$date'
+where start_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
 and upper(sku) like '%OUTLAW%'
 group by 1,2,3,4
 order by 1,2,3,4
@@ -232,7 +266,7 @@ from
         sum(case when metric='revenue' then value else 0 end) as revenue,
         sum(case when metric='units' then value else 0 end) as units
         from tmp.a_metrics_outlaw_daily_dash
-        where stat_date between date_sub('$date', interval 30 day) and '$date'
+        where stat_date between date_sub('$date$', interval $ndays$ day) and '$date$'
         group by 1
 ) a,
 (
@@ -245,42 +279,43 @@ from
         sum(case when metric='revenue' then value else 0 end) as revenue,
         sum(case when metric='units' then value else 0 end) as units
         from tmp.a_metrics_outlaw_daily_dash
-        where stat_date between date_sub('$date', interval 30 day) and '$date'
+        where stat_date between date_sub('$date$', interval $ndays$ day) and '$date$'
 ) b
 group by 1
 order by 1
 ;
+
 </query>
 <query time="10" name="summary" title="Daily Summary">
 select
 'DAU' as Metric,
-format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric='dau'
 group by 1
 union
 select
 'Installs' as Metric,
-format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric='installs'
 group by 1
 union
 select
 'Sessions/DAU' as Metric,
-format(sum(case when stat_date='$date' then value else 0 end),2) as Value,
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),2) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric='sessions'
 and game_id=-2
@@ -288,11 +323,11 @@ group by 1
 union
 select
 'Med Session Length' as Metric,
-format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric='sessionlen'
 and game_id=-2
@@ -300,185 +335,327 @@ group by 1
 union
 select
 'MAU' as Metric,
-format(sum(case when stat_date='$date' then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric='mau'
 group by 1
 union
 select
 'Revenue' as Metric,
-concat('$',format(sum(case when stat_date='$date' then value else 0 end),2)) as Value,
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date='$date' then value else 0 end)/
-sum(case when stat_date=date_sub('$date', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+concat('$',format(sum(case when stat_date='$date$' then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric='revenue'
 group by 1
 union
 select
 'Revenue/DAU' as Metric,
-concat('$',format(sum(case when metric='revenue' and stat_date='$date' then value else 0 end)/
-sum(case when metric='dau'     and stat_date='$date' then value else 0 end),3)) as Value,
-concat(format(100*(sum(case when metric='revenue' and stat_date='$date' then value else 0 end)/
- sum(case when metric='dau'     and stat_date='$date' then value else 0 end))/
-(sum(case when metric='revenue' and stat_date=date_sub('$date', interval 1 day) then value else 0 end)/
- sum(case when metric='dau'     and stat_date=date_sub('$date', interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
-concat(format(100*(sum(case when metric='revenue' and stat_date='$date' then value else 0 end)/
- sum(case when metric='dau'     and stat_date='$date' then value else 0 end))/
-(sum(case when metric='revenue' and stat_date=date_sub('$date', interval 7 day) then value else 0 end)/
- sum(case when metric='dau'     and stat_date=date_sub('$date', interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
+concat('$',format(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+sum(case when metric='dau'     and stat_date='$date$' then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+ sum(case when metric='dau'     and stat_date='$date$' then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub('$date$', interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub('$date$', interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
+concat(format(100*(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+ sum(case when metric='dau'     and stat_date='$date$' then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub('$date$', interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_outlaw_daily_dash
 where metric in('revenue','dau')
 group by 1
 order by 1
-;
-</query>
+;</query>
 <query time="10" name="retention" title="Outlaw 30 Day Retention Trends">
-drop table if exists tmp.dau_outlaw_daily_dash;
-
-create table tmp.dau_outlaw_daily_dash(index(user_id)) engine=MyIsam
-as 
-select user_id, 
-date(stat_date) as stat_date
-from star.s_user_day
-where game_id=23
-and client_id=1
-group by 1,2
-;
-
-drop table if exists tmp.installs_outlaw_daily_dash;
-
 create table tmp.installs_outlaw_daily_dash(index(user_id)) engine=MyIsam
-as 
-select user_id, 
+as
+select user_id,
 min(stat_date) as install_date
 from tmp.dau_outlaw_daily_dash
 group by 1
 ;
 
-drop table if exists tmp.retention_summary_outlaw_daily_dash;
-
 create table tmp.retention_summary_outlaw_daily_dash engine=MyIsam
 as
 SELECT install_date,
-datediff(stat_date, install_date) as ddiff, 
+datediff(stat_date, install_date) as ddiff,
 count(distinct i.user_id) as cnt
-FROM tmp.installs_outlaw_daily_dash i 
-left join tmp.dau_outlaw_daily_dash d 
+FROM tmp.installs_outlaw_daily_dash i
+left join tmp.dau_outlaw_daily_dash d
 on i.user_id  = d.user_id
-where stat_date between date_sub('$date', interval 30 day) and '$date'
+where stat_date between date_sub('$date$', interval 30+$ndays$ day) and '$date$'
 GROUP BY 1,2
 ;
 
-SELECT install_date as "Install Date", 
+SELECT install_date as "Install Date",
 users as Installs,
 day1 *100.0 / users as "D1%",
-#day2 *100.0 / users as "D2%",
-#day3 *100.0 / users as "D3%",
-#day4 *100.0 / users as "D4%",
-#day5 *100.0 / users as "D5%",
-#day6 *100.0 / users as "D6%",
+day2 *100.0 / users as "D2%",
+day3 *100.0 / users as "D3%",
+day4 *100.0 / users as "D4%",
+day5 *100.0 / users as "D5%",
+day6 *100.0 / users as "D6%",
 day7 *100.0 / users as "D7%",
-#day8 *100.0 / users as "D8%",
-#day9 *100.0 / users as "D9%",
-#day10 *100.0 / users as "D10%",
-#day11 *100.0 / users as "D11%",
-#day12 *100.0 / users as "D12%",
-#day13 *100.0 / users as "D13%",
+day8 *100.0 / users as "D8%",
+day9 *100.0 / users as "D9%",
+day10 *100.0 / users as "D10%",
+day11 *100.0 / users as "D11%",
+day12 *100.0 / users as "D12%",
+day13 *100.0 / users as "D13%",
 day14 *100.0 / users as "D14%",
-#day15 *100.0 / users as "D15%",
-#day16 *100.0 / users as "D16%",
-#day17 *100.0 / users as "D17%",
-#day18 *100.0 / users as "D18%",
-#day19 *100.0 / users as "D19%",
-#day20 *100.0 / users as "D20%",
-#day21 *100.0 / users as "D21%",
-#day22 *100.0 / users as "D22%",
-#day23 *100.0 / users as "D23%",
-#day24 *100.0 / users as "D24%",
-#day25 *100.0 / users as "D25%",
-#day26 *100.0 / users as "D26%",
-#day27 *100.0 / users as "D27%",
-#day28 *100.0 / users as "D28%",
-#day29 *100.0 / users as "D29%",
-day30 *100.0 / users as "D30%",
-day1,
-#day2,
-#day3,
-#day4,
-#day5,
-#day6,
-day7,
-#day8,
-#day9,
-#day10,
-#day11,
-#day12,
-#day13,
-day14,
-#day15,
-#day16,
-#day17,
-#day18,
-#day19,
-#day20,
-#day21,
-#day22,
-#day23,
-#day24,
-#day25,
-#day26,
-#day27,
-#day28,
-#day29,
-day30
+day15 *100.0 / users as "D15%",
+day16 *100.0 / users as "D16%",
+day17 *100.0 / users as "D17%",
+day18 *100.0 / users as "D18%",
+day19 *100.0 / users as "D19%",
+day20 *100.0 / users as "D20%",
+day21 *100.0 / users as "D21%",
+day22 *100.0 / users as "D22%",
+day23 *100.0 / users as "D23%",
+day24 *100.0 / users as "D24%",
+day25 *100.0 / users as "D25%",
+day26 *100.0 / users as "D26%",
+day27 *100.0 / users as "D27%",
+day28 *100.0 / users as "D28%",
+day29 *100.0 / users as "D29%",
+day30 *100.0 / users as "D30%"
 FROM
 (
-SELECT install_date, 
+SELECT install_date,
 sum(case when ddiff=0 or ddiff is null then cnt else 0 end) users,
 sum(case when ddiff = 1 then cnt else 0 end) day1,
-#sum(case when ddiff = 2 then cnt else 0 end) day2,
-#sum(case when ddiff = 3 then cnt else 0 end) day3,
-#sum(case when ddiff = 4 then cnt else 0 end) day4,
-#sum(case when ddiff = 5 then cnt else 0 end) day5,
-#sum(case when ddiff = 6 then cnt else 0 end) day6,
+sum(case when ddiff = 2 then cnt else 0 end) day2,
+sum(case when ddiff = 3 then cnt else 0 end) day3,
+sum(case when ddiff = 4 then cnt else 0 end) day4,
+sum(case when ddiff = 5 then cnt else 0 end) day5,
+sum(case when ddiff = 6 then cnt else 0 end) day6,
 sum(case when ddiff = 7 then cnt else 0 end) day7,
-#sum(case when ddiff = 8 then cnt else 0 end) day8,
-#sum(case when ddiff = 9 then cnt else 0 end) day9,
-#sum(case when ddiff = 10 then cnt else 0 end) day10,
-#sum(case when ddiff = 11 then cnt else 0 end) day11,
-#sum(case when ddiff = 12 then cnt else 0 end) day12,
-#sum(case when ddiff = 13 then cnt else 0 end) day13,
+sum(case when ddiff = 8 then cnt else 0 end) day8,
+sum(case when ddiff = 9 then cnt else 0 end) day9,
+sum(case when ddiff = 10 then cnt else 0 end) day10,
+sum(case when ddiff = 11 then cnt else 0 end) day11,
+sum(case when ddiff = 12 then cnt else 0 end) day12,
+sum(case when ddiff = 13 then cnt else 0 end) day13,
 sum(case when ddiff = 14 then cnt else 0 end) day14,
-#sum(case when ddiff = 15 then cnt else 0 end) day15,
-#sum(case when ddiff = 16 then cnt else 0 end) day16,
-#sum(case when ddiff = 17 then cnt else 0 end) day17,
-#sum(case when ddiff = 18 then cnt else 0 end) day18,
-#sum(case when ddiff = 19 then cnt else 0 end) day19,
-#sum(case when ddiff = 20 then cnt else 0 end) day20,
-#sum(case when ddiff = 21 then cnt else 0 end) day21,
-#sum(case when ddiff = 22 then cnt else 0 end) day22,
-#sum(case when ddiff = 23 then cnt else 0 end) day23,
-#sum(case when ddiff = 24 then cnt else 0 end) day24,
-#sum(case when ddiff = 25 then cnt else 0 end) day25,
-#sum(case when ddiff = 26 then cnt else 0 end) day26,
-#sum(case when ddiff = 27 then cnt else 0 end) day27,
-#sum(case when ddiff = 28 then cnt else 0 end) day28,
-#sum(case when ddiff = 29 then cnt else 0 end) day29,
+sum(case when ddiff = 15 then cnt else 0 end) day15,
+sum(case when ddiff = 16 then cnt else 0 end) day16,
+sum(case when ddiff = 17 then cnt else 0 end) day17,
+sum(case when ddiff = 18 then cnt else 0 end) day18,
+sum(case when ddiff = 19 then cnt else 0 end) day19,
+sum(case when ddiff = 20 then cnt else 0 end) day20,
+sum(case when ddiff = 21 then cnt else 0 end) day21,
+sum(case when ddiff = 22 then cnt else 0 end) day22,
+sum(case when ddiff = 23 then cnt else 0 end) day23,
+sum(case when ddiff = 24 then cnt else 0 end) day24,
+sum(case when ddiff = 25 then cnt else 0 end) day25,
+sum(case when ddiff = 26 then cnt else 0 end) day26,
+sum(case when ddiff = 27 then cnt else 0 end) day27,
+sum(case when ddiff = 28 then cnt else 0 end) day28,
+sum(case when ddiff = 29 then cnt else 0 end) day29,
 sum(case when ddiff = 30 then cnt else 0 end) day30
-FROM 
+FROM
 tmp.retention_summary_outlaw_daily_dash
-where install_date between date_sub('$date',interval 29 day) and '$date' 
+where install_date between date_sub('$date$',interval $ndays$ day) and '$date$'
 GROUP BY install_date
 ) a
 ORDER BY install_date desc;
+;
+</query>
+<query time="10" name="ftue" title="FTUE Dropoff">
+# FTUE
+create table tmp.ftue_outlaw_daily_dash(index(user_id, event_id))
+as
+select a.user_id, a.event_id, a.stat_date, a.stat_time
+from tmp.events_outlaw_daily_dash a, tmp.installs_outlaw_daily_dash b, tmp.l_event_outlaw_daily_dash c
+where a.user_id=b.user_id
+and a.event_id=c.event_id
+and c.type='FTUE'
+and b.install_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+group by 1,2,3,4
+;
+
+select install_date as 'Install Date',
+count(distinct user_id) as Installs,
+100*sum(FT01_Started)/count(distinct user_id) as FT01_Started,
+100*sum(FT01_Completed)/count(distinct user_id) as FT01_Completed,
+100*sum(FT02_Started)/count(distinct user_id) as FT02_Started,
+100*sum(FT02_Completed)/count(distinct user_id) as FT02_Completed,
+100*sum(FT03_Started)/count(distinct user_id) as FT03_Started,
+100*sum(FT03_Completed)/count(distinct user_id) as FT03_Completed,
+100*sum(FT04_Started)/count(distinct user_id) as FT04_Started,
+100*sum(FT04_Completed)/count(distinct user_id) as FT04_Completed,
+100*sum(FT05_Started)/count(distinct user_id) as FT05_Started,
+100*sum(FT05_Completed)/count(distinct user_id) as FT05_Completed,
+100*sum(FT06_Started)/count(distinct user_id) as FT06_Started,
+100*sum(FT06_Completed)/count(distinct user_id) as FT06_Completed,
+100*sum(FT07_Started)/count(distinct user_id) as FT07_Started, 
+100*sum(FT07_Completed)/count(distinct user_id) as FT07_Completed,
+100*sum(FT08_Started)/count(distinct user_id) as FT08_Started,  
+100*sum(FT08_Completed)/count(distinct user_id) as FT08_Completed,
+100*sum(FT09_Started)/count(distinct user_id) as FT09_Started,  
+100*sum(FT09_Completed)/count(distinct user_id) as FT09_Completed,
+100*sum(FT10_Started)/count(distinct user_id) as FT10_Started,
+100*sum(FT10_Completed)/count(distinct user_id) as FT10_Completed,
+100*sum(FT11_Started)/count(distinct user_id) as FT11_Started,
+100*sum(FT11_Completed)/count(distinct user_id) as FT11_Completed,
+100*sum(FT12_Started)/count(distinct user_id) as FT12_Started,
+100*sum(FT12_Completed)/count(distinct user_id) as FT12_Completed,
+100*sum(FT13_Started)/count(distinct user_id) as FT13_Started,
+100*sum(FT13_Completed)/count(distinct user_id) as FT13_Completed
+from 
+(
+select a.install_date, 
+a.user_id, 
+10*max(case when event_id=75 then 1 else 0 end) as FT01_Started,
+10*max(case when event_id=76 then 1 else 0 end) as FT01_Completed,
+10*max(case when event_id=78 then 1 else 0 end) as FT02_Started,
+10*max(case when event_id=77 then 1 else 0 end) as FT02_Completed,
+10*max(case when event_id=80 then 1 else 0 end) as FT03_Started,
+10*max(case when event_id=79 then 1 else 0 end) as FT03_Completed,
+10*max(case when event_id=82 then 1 else 0 end) as FT04_Started,
+10*max(case when event_id=81 then 1 else 0 end) as FT04_Completed,
+10*max(case when event_id=84 then 1 else 0 end) as FT05_Started,
+10*max(case when event_id=83 then 1 else 0 end) as FT05_Completed,
+10*max(case when event_id=85 then 1 else 0 end) as FT06_Started,
+10*max(case when event_id=87 then 1 else 0 end) as FT06_Completed,
+10*max(case when event_id=88 then 1 else 0 end) as FT07_Started,  
+10*max(case when event_id=89 then 1 else 0 end) as FT07_Completed,
+10*max(case when event_id=93 then 1 else 0 end) as FT08_Started,  
+10*max(case when event_id=94 then 1 else 0 end) as FT08_Completed,
+10*max(case when event_id=161 then 1 else 0 end) as FT09_Started,  
+10*max(case when event_id=162 then 1 else 0 end) as FT09_Completed,
+10*max(case when event_id=95 then 1 else 0 end) as FT10_Started,
+10*max(case when event_id=96 then 1 else 0 end) as FT10_Completed,
+10*max(case when event_id=98 then 1 else 0 end) as FT11_Started,
+10*max(case when event_id=101 then 1 else 0 end) as FT11_Completed,
+10*max(case when event_id=103 then 1 else 0 end) as FT12_Started,
+10*max(case when event_id=104 then 1 else 0 end) as FT12_Completed,
+10*max(case when event_id=105 then 1 else 0 end) as FT13_Started,
+10*max(case when event_id=106 then 1 else 0 end) as FT13_Completed
+from tmp.installs_outlaw_daily_dash a
+left join tmp.ftue_outlaw_daily_dash b
+on a.user_id=b.user_id
+where a.install_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+group by 1,2
+) a
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="purchases" title="Weapon Purchases">
+# Weapon Purchases
+create table tmp.gunpurchase_outlaw_daily_dash
+as
+select a.user_id,
+c.install_date,
+a.stat_date,
+a.stat_time,
+event_name,
+substring_index(substring_index(event_name,"_",4),"_",-1) as gun,
+substring_index(substring_index(event_name,"_",5),"_",-1) as location
+from tmp.events_outlaw_daily_dash a, tmp.l_event_outlaw_daily_dash b, tmp.installs_outlaw_daily_dash c
+where a.event_id=b.event_id
+and a.user_id=c.user_id
+and b.type ='PRCD'
+and c.install_date between date_sub('$date$', interval $ndays$ day) and '$date$'
+group by 1,2,3,4,5,6,7
+;
+
+select install_date as "Install Date",
+max(i.value) as Installs,
+10*count(distinct case when gun='musket' then user_id else null end) as Musket,
+10*count(distinct case when gun='cannonpistol' then user_id else null end) as CannonPistol,
+10*count(distinct case when gun='shotgun' then user_id else null end) as PepperBox,
+10*count(distinct case when gun='tarballgun' then user_id else null end) as TarBallGun,
+10*count(distinct case when gun='rifle' then user_id else null end) as Rifle,
+10*count(distinct case when gun='buzzsawyer' then user_id else null end) as BuzzSawyer,
+10*count(distinct case when gun='carbine' then user_id else null end) as Carbine,
+10*count(distinct case when gun='oldsmokey' then user_id else null end) as OldSmokey,
+10*count(distinct case when gun='shortcarbine' then user_id else null end) as ShortCarbine,
+10*count(distinct case when gun='dynogun' then user_id else null end) as DynOGun,
+10*count(distinct case when gun='buffalogun' then user_id else null end) as BuffaloGun,
+10*count(distinct case when gun='applejack' then user_id else null end) as AppleJack,
+10*count(distinct case when gun='lilTimmy' then user_id else null end) as LilTimmy,
+10*count(distinct case when gun='mortarmusket' then user_id else null end) as MortarMusket,
+10*count(distinct case when gun='bulldoggatlin' then user_id else null end) as BullDogGatlin,
+10*count(distinct case when gun='teslalightning' then user_id else null end) as TeslaLightning
+from tmp.gunpurchase_outlaw_daily_dash a,
+tmp.a_metrics_outlaw_daily_dash i
+where a.install_date=i.stat_date
+and i.metric='installs'
+group by 1
+order by 1 desc
+;
+</query>
+<query time="10" name="upgrades1" title="Weapon Upgrades">
+create table tmp.gunupgrade_outlaw_daily_dash
+as
+select a.user_id,
+c.install_date,
+stat_date,
+stat_time,
+event_name,
+substring_index(substring_index(event_name,"_",4),"_",-1) as gun,
+substring_index(substring_index(event_name,"_",5),"_",-1) as location,
+substring_index(event_name,"_",-1) as upgrade
+from tmp.events_outlaw_daily_dash a, tmp.l_event_outlaw_daily_dash b, tmp.installs_outlaw_daily_dash c
+where a.event_id=b.event_id
+and a.user_id=c.user_id
+and b.type ='UPGD'
+and c.install_date between date_sub('$date$', interval $ndays$ day) and '$date$'
+group by 1,2,3,4,5,6,7
+;
+
+select install_date as "Install Date",
+max(i.value) as Installs,
+10*count(distinct case when gun='musket' then user_id else null end) as Musket,
+10*count(distinct case when gun='cannonpistol' then user_id else null end) as CannonPistol,
+10*count(distinct case when gun='shotgun' then user_id else null end) as PepperBox,
+10*count(distinct case when gun='tarballgun' then user_id else null end) as TarBallGun,
+10*count(distinct case when gun='rifle' then user_id else null end) as Rifle,
+10*count(distinct case when gun='buzzsawyer' then user_id else null end) as BuzzSawyer,
+10*count(distinct case when gun='carbine' then user_id else null end) as Carbine,
+10*count(distinct case when gun='oldsmokey' then user_id else null end) as OldSmokey,
+10*count(distinct case when gun='shortcarbine' then user_id else null end) as ShortCarbine,
+10*count(distinct case when gun='dynogun' then user_id else null end) as DynOGun,
+10*count(distinct case when gun='buffalogun' then user_id else null end) as BuffaloGun,
+10*count(distinct case when gun='applejack' then user_id else null end) as AppleJack,
+10*count(distinct case when gun='lilTimmy' then user_id else null end) as LilTimmy,
+10*count(distinct case when gun='mortarmusket' then user_id else null end) as MortarMusket,
+10*count(distinct case when gun='bulldoggatlin' then user_id else null end) as BullDogGatlin,
+10*count(distinct case when gun='teslalightning' then user_id else null end) as TeslaLightning
+from tmp.gunupgrade_outlaw_daily_dash a,
+tmp.a_metrics_outlaw_daily_dash i
+where a.install_date=i.stat_date
+and i.metric='installs'
+group by 1
+order by 1 desc
+;
+</query>
+<query time="10" name="upgrades2" title="Weapon Upgrades - Type">
+select install_date as "Install Date",
+max(i.value) as Installs,
+10*count(distinct case when upgrade=lower('attachment') then user_id else null end) as Attachment,
+10*count(distinct case when upgrade=lower('barrel') then user_id else null end) as Barrel,
+10*count(distinct case when upgrade=lower('cartridge') then user_id else null end) as Cartridge,
+10*count(distinct case when upgrade=lower('sight') then user_id else null end) as Sight,
+10*count(distinct case when upgrade=lower('stock') then user_id else null end) as Stock
+from tmp.gunupgrade_outlaw_daily_dash a,
+tmp.a_metrics_outlaw_daily_dash i
+where a.install_date=i.stat_date
+and i.metric='installs'
+group by 1
+order by 1 desc
+;
 </query>
 <parm name="date" text="Date" type="date"/>
+<parm name="ndays" text="N Days Back" type="edit"/>
 <column name="Date" format="date"/>
 <column name="DAU" format="number"/>
 <column name="Installs" format="number"/>
@@ -516,13 +693,32 @@ ORDER BY install_date desc;
 <column name="D28%" format="percent"/>
 <column name="D29%" format="percent"/>
 <column name="D30%" format="percent"/>
-<column name="Splash Started" format="percent"/>
-<column name="Splash Completed" format="percent"/>
-<column name="Play Started" format="percent"/>
-<column name="Game Started" format="percent"/>
-<column name="Armory Started" format="percent"/>
-<column name="Armory Completed" format="percent"/>
-<column name="Round Two" format="percent"/>
+<column name="FT01_Started" format="percent"/>
+<column name="FT01_Completed" format="percent"/>
+<column name="FT02_Started" format="percent"/>
+<column name="FT02_Completed" format="percent"/>
+<column name="FT03_Started" format="percent"/>
+<column name="FT03_Completed" format="percent"/>
+<column name="FT04_Started" format="percent"/>
+<column name="FT04_Completed" format="percent"/>
+<column name="FT05_Started" format="percent"/>
+<column name="FT05_Completed" format="percent"/>
+<column name="FT06_Started" format="percent"/>
+<column name="FT06_Completed" format="percent"/>
+<column name="FT07_Started" format="percent"/>
+<column name="FT07_Completed" format="percent"/>
+<column name="FT08_Started" format="percent"/>
+<column name="FT08_Completed" format="percent"/>
+<column name="FT09_Started" format="percent"/>
+<column name="FT09_Completed" format="percent"/>
+<column name="FT10_Started" format="percent"/>
+<column name="FT10_Completed" format="percent"/>
+<column name="FT11_Started" format="percent"/>
+<column name="FT11_Completed" format="percent"/>
+<column name="FT12_Started" format="percent"/>
+<column name="FT12_Completed" format="percent"/>
+<column name="FT13_Started" format="percent"/>
+<column name="FT13_Completed" format="percent"/>
 <column name="Revolver" format="number"/>
 <column name="PepperBox" format="number"/>
 <column name="Musket" format="number"/>

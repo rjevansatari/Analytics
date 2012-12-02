@@ -38,7 +38,7 @@ class Subscription
 		return $ts;
 	}
 
-	function eMail($row) {
+	function eMail($row, $user='') {
 
 		$lastRun=$this->getLastReportRun($row['subscription_name']);
 		$html=$lastRun['report_html'];
@@ -71,7 +71,12 @@ class Subscription
 		$hdrs = $mime->headers($hdrs);
 
 		$mail =& Mail::factory('mail');
-		$mail->send($row['subscription_list'], $hdrs, $body);
+		if ( $user == '' ) { 
+			$mail->send($row['subscription_list'], $hdrs, $body);
+		}
+		else {
+			$mail->send($user, $hdrs, $body);
+		}
 	
 	}
 

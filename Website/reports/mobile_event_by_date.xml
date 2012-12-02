@@ -13,10 +13,10 @@ event_id,
 stat_date,
 stat_time
 from star.s_user_event
-where game_id=$gameid
-and client_id=$clientid
+where game_id=$gameid$
+and client_id=$clientid$
 and event_id=case when $eventid=-2 then event_id else $eventid end
-and stat_date between '$startdate' and '$enddate'
+and stat_date between '$startdate$' and '$enddate$'
 group by 1,2,3,4
 ;
 

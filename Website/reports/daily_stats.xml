@@ -1,9 +1,10 @@
 <xml>
 <title>
-Atari Mobile Daily Stats Summary - $date
+Atari Mobile Daily Stats Summary
 </title>
 <description>
-NOTE: All revenue data is gross.
+NOTE: All revenue data is gross and for iOS only.
+NOTE: MAU and Engagement metrics are not available for all games.
 </description>
 <query hidden="true" time="10" name="dailystats" title="Atari 30 Day Stats Trends">
 drop table if exists tmp.a_metrics_daily_stats;
@@ -18,7 +19,7 @@ cast('dau' as char(8)) as metric,
 sum(value) as value
 from star.s_game_day
 where metric='ActiveUsersByDay'
-and stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+and stat_date between date_sub('$date$', interval $days$+7 day) and '$date$'
 group by 1,2,3,4
 order by 1,2,3,4
 ;
@@ -32,7 +33,7 @@ client_id,
 sum(value) as value
 from star.s_game_day
 where metric='NewUsers'
-and stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+and stat_date between date_sub('$date$', interval $days$+7 day) and '$date$'
 group by 1,2,3,4
 order by 1,2,3,4
 ;
@@ -42,7 +43,7 @@ create temporary table tmp.dau_daily_dash(index(stat_date, user_id)) engine=myis
 as
 select game_id, client_id, stat_date, user_id
 from star.s_user_day
-where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+37 day) and date_sub(curdate(), interval 1 day)
+where stat_date between date_sub('$date$', interval $days$+37 day) and '$date$'
 group by 1,2,3,4
 ;
 
@@ -60,7 +61,7 @@ a.client_id,
 count(distinct a.user_id) as value
 from tmp.dau_daily_dash a, lookups.d_date d
 where a.stat_date between date_sub(d.date, interval 6 day) and d.date
-and d.date between date_sub(date_sub(curdate(), interval 1 day), interval $days day) and date_sub(curdate(), interval 1 day)
+and d.date between date_sub('$date$', interval $days$+7 day) and '$date$'
 group by 1,2,3
 ) a
 group by 1,2,3,4
@@ -80,7 +81,7 @@ a.client_id,
 count(distinct a.user_id) as value
 from tmp.dau_daily_dash a, lookups.d_date d
 where a.stat_date between date_sub(d.date, interval 29 day) and d.date
-and d.date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+and d.date between date_sub('$date$', interval $days$+7 day) and '$date$'
 group by 1,2,3
 ) a
 group by 1,2,3,4
@@ -109,7 +110,7 @@ select start_date as stat_date,
 currency_of_proceeds as currency_code,
 sum(units*net_revenue)/0.7 as gross_revenue
 from star.itunes_sales
-where start_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+where start_date between date_sub('$date$', interval $days$+7 day) and '$date$'
 group by 1,2
 ;
 
@@ -118,7 +119,7 @@ select stat_date,
 'USD' as currency_code,
 sum(revenue/0.7) as gross_revenue
 from star.app_figures
-where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+where stat_date between date_sub('$date$', interval $days$+7 day) and '$date$'
 and game_id in (21,24)
 group by 1,2
 ;
@@ -136,7 +137,7 @@ on a.stat_date=b.fx_date
 and a.currency_code=b.currency_code
 join tmp.fx_rate c
 on a.currency_code=c.currency_code
-where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval 30+7 day) and date_sub(curdate(), interval 1 day)
+where stat_date between date_sub('$date$', interval $days$+7 day) and '$date$'
 group by 1,2,3,4
 order by 1,2,3,4
 ;
@@ -151,11 +152,11 @@ from
 ( select start_date as stat_date, net_revenue, units
   from 
   star.itunes_sales
-  where start_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+  where start_date between date_sub('$date$', interval $days$+7 day) and '$date$'
   union
   select stat_date, revenue, downloads as units
   from star.app_figures 
-  where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days+7 day) and date_sub(curdate(), interval 1 day)
+  where stat_date between date_sub('$date$', interval $days$+7 day) and '$date$'
 ) a
 group by 1,2,3,4
 order by 1,2,3,4
@@ -168,12 +169,12 @@ max(a.mau) as MAU,
 max(a.engagement) as Engagement,
 max(a.revenue) as Revenue,
 max(a.units) as Units,
-sum(b.dau)/($days+1) as Avg_DAU,
-sum(b.installs)/($days+1) as Avg_Installs,
-sum(b.mau)/($days+1) as Avg_MAU,
+sum(b.dau)/($days$+1) as Avg_DAU,
+sum(b.installs)/($days$+1) as Avg_Installs,
+sum(b.mau)/($days$+1) as Avg_MAU,
 max(b.engagement) as Avg_Engagement,
-sum(b.revenue)/($days+1) as Avg_Revenue,
-sum(b.units)/($days+1) as Avg_Units
+sum(b.revenue)/($days$+1) as Avg_Revenue,
+sum(b.units)/($days$+1) as Avg_Units
 from 
 (
 	select stat_date,
@@ -185,7 +186,7 @@ from
 	sum(case when metric='revenue' then value else 0 end) as revenue,
 	sum(case when metric='units' then value else 0 end) as units
 	from tmp.a_metrics_daily_stats
-	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days day) and date_sub(curdate(), interval 1 day)
+	where stat_date between date_sub('$date$', interval $days$+1 day) and '$date$'
 	group by 1
 ) a,
 ( 
@@ -198,70 +199,69 @@ from
 	sum(case when metric='revenue' then value else 0 end) as revenue,
 	sum(case when metric='units' then value else 0 end) as units
 	from tmp.a_metrics_daily_stats
-	where stat_date between date_sub(date_sub(curdate(), interval 1 day), interval $days day) and date_sub(curdate(), interval 1 day)
+	where stat_date between date_sub('$date$', interval $days$+1 day) and '$date$'
 ) b
 group by 1
 order by 1
 ;
-
 </query>
 <query time="10" name="summary" title="Daily Summary">
 select
 'DAU' as Metric,
-format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day)  then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_daily_stats
 where metric='dau'
 group by 1
 union
 select
 'Installs' as Metric,
-format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day)  then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_daily_stats
 where metric='installs'
 group by 1
 union
 select
 'MAU' as Metric,
-format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),0) as Value,
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day)  then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_daily_stats
 where metric='mau'
 group by 1
 union
 select
 'Revenue' as Metric,
-concat('$',format(sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),2)) as Value,
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
-concat(format(100*sum(case when stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+concat('$',format(sum(case when stat_date='$date$' then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day)  then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_daily_stats
 where metric='revenue'
 group by 1
 union
 select
 'Revenue/DAU' as Metric,
-concat('$',format(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end),3)) as Value,
-concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)/
- sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end))/
-(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
- sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
-concat(format(100*(sum(case when metric='revenue' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)/
- sum(case when metric='dau'     and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end))/
-(sum(case when metric='revenue' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
- sum(case when metric='dau'     and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
+concat('$',format(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+sum(case when metric='dau'     and stat_date='$date$' then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+ sum(case when metric='dau'     and stat_date='$date$' then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub('$date$', interval 1 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub('$date$', interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
+concat(format(100*(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+ sum(case when metric='dau'     and stat_date='$date$' then value else 0 end))/
+(sum(case when metric='revenue' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)/
+ sum(case when metric='dau'     and stat_date=date_sub('$date$', interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
 from tmp.a_metrics_daily_stats
 where metric in('revenue','dau')
 group by 1
@@ -271,28 +271,133 @@ order by 1
 <query time="10" name="game" title="Summary By Game">
 select
 game_name as 'Game',
-    sum(case when metric='dau' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end) as DAU,
-100*sum(case when metric='dau' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-    sum(case when metric='dau' and stat_date=date_sub(date_sub(curdate(), interval 1 day),interval 1 day) then value else 0 end)-100 as 'DAU DoD % Change',
-100*sum(case when metric='dau' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-    sum(case when metric='dau' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100 as 'DAU WoW % Change',
-    sum(case when metric='installs' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end) as Installs,
-100*sum(case when metric='installs' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-    sum(case when metric='installs' and stat_date=date_sub(date_sub(curdate(), interval 1 day),interval 1 day) then value else 0 end)-100 as ' Installs DoD % Change',
-100*sum(case when metric='installs' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-    sum(case when metric='installs' and stat_date=date_sub(date_sub(curdate(), interval 7 day), interval 1 day) then value else 0 end)-100 as 'Installs WoW % Change',
-    sum(case when metric='mau' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end) as MAU,
-100*sum(case when metric='mau' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-    sum(case when metric='mau' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 1 day) then value else 0 end)-100 as 'MAU DoD % Change',
-100*sum(case when metric='mau' and stat_date=date_sub(curdate(), interval 1 day) then value else 0 end)/
-    sum(case when metric='mau' and stat_date=date_sub(date_sub(curdate(), interval 1 day), interval 7 day) then value else 0 end)-100 as 'MAU WoW % Change'
+    sum(case when metric='dau' and stat_date='$date$' then value else 0 end) as DAU,
+100*sum(case when metric='dau' and stat_date='$date$' then value else 0 end)/
+    sum(case when metric='dau' and stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100 as 'DAU DoD % Change',
+100*sum(case when metric='dau' and stat_date='$date$' then value else 0 end)/
+    sum(case when metric='dau' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100 as 'DAU WoW % Change',
+    sum(case when metric='installs' and stat_date='$date$' then value else 0 end) as Installs,
+100*sum(case when metric='installs' and stat_date='$date$' then value else 0 end)/
+    sum(case when metric='installs' and stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100 as 'Installs DoD % Change',
+100*sum(case when metric='installs' and stat_date='$date$' then value else 0 end)/
+    sum(case when metric='installs' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100 as 'Installs WoW % Change',
+    sum(case when metric='mau' and stat_date='$date$' then value else 0 end) as MAU,
+100*sum(case when metric='mau' and stat_date=date_sub('$date$', interval 1 day) then value else 0 end)/
+    sum(case when metric='mau' and stat_date='$date$' then value else 0 end)-100 as 'MAU DoD % Change',
+100*sum(case when metric='mau' and stat_date='$date$' then value else 0 end)/
+    sum(case when metric='mau' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100 as 'MAU WoW % Change'
 from tmp.a_metrics_daily_stats a, lookups.l_flurry_game g
 where a.metric in ('dau','installs', 'mau')
 and a.game_id=g.game_id
 and a.client_id=g.device_id
 group by 1
-having sum(case when metric='dau' and stat_date in (date_sub(curdate(), interval 1 day), date_sub(date_sub(curdate(), interval 1 day), interval 1 day), date_sub(date_sub(curdate(), interval 1 day), interval 7 day)) then value else 0 end) > 0
+having sum(case when metric='dau' and stat_date in ('$date$', '$date$', date_sub('$date$', interval 7 day)) then value else 0 end) > 0
 order by 2 desc
+;
+</query>
+<query time="10" name="revenue" title="Revenue Summary By Game - iOS Only">
+drop table if exists tmp.revenue;
+
+create temporary table tmp.revenue(index(stat_date, currency_code)) engine=myisam
+as
+select case when sku='28278'                then 15
+	when sku='28413'                    then 22
+	when sku='28475'                    then 11
+	when title like 'Asteroids%Gunner%' then 18
+	when upper(title) like 'ASTFLU%'    then 7
+	when upper(title) like 'ASTFNA%'    then 18
+	when upper(title) like 'ATGIOS%'    then 1
+	when upper(title) like 'BREBOO%'    then 5
+	when upper(title) like 'BREBOP%'    then 15
+	when upper(title) like 'CENTOR%'    then 22
+	when upper(title) like 'CIRCU%'     then 16
+	when upper(title) like 'DDWAR%'     then 11
+	when upper(title) like 'NEWOUT%'    then 23
+	when upper(title) like 'PNGWRL%'    then 25
+	else                                     -2
+end as game_id,
+1 as client_id,
+start_date as stat_date,
+currency_of_proceeds as currency_code,
+sum(units*net_revenue)/0.7 as gross_revenue
+from star.itunes_sales
+where start_date between date_sub('$date$', interval $days$+7 day) and '$date$'
+and net_revenue!=0
+group by 1,2,3,4
+;
+
+drop table if exists tmp.fx_rate;
+
+create temporary table tmp.fx_rate
+as
+select b.currency_code, b.fx_rate
+from
+(
+        select currency_code, max(fx_date) as fx_date
+        from lookups.l_fx_rate
+        group by 1
+) a,
+lookups.l_fx_rate b
+where a.currency_code=b.currency_code
+and a.fx_date=b.fx_date
+group by 1,2
+;
+
+insert into tmp.revenue
+select 21 as game_id,
+1 as client_id,
+stat_date,
+'USD' as currency_code,
+sum(revenue/0.7) as gross_revenue
+from star.app_figures
+where stat_date between date_sub('$date$', interval $days$+7 day) and '$date$'
+and game_id in (21,24)
+group by 1,2,3
+;
+
+SELECT
+case when a.game_id in (21,24) then 'Super Bunny Breakout'
+     when a.game_id=-2 then 'Other'
+     else game_name
+end as Game,
+sum(case       when a.stat_date='$date$' then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end) as Revenue,
+100.0*sum(case when a.stat_date='$date$' then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+     sum(case when a.stat_date=date_sub('$date$', interval 1 day) then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)-100 as 'Rev DoD % Change',
+100.0*sum(case when a.stat_date='$date$' then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+      sum(case when a.stat_date=date_sub('$date$', interval 7 day) then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)-100 as 'Rev WoW % Change',
+sum(case       when a.stat_date='$date$' then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+max(case       when a.stat_date='$date$' then d.value else 0 end) as 'Revenue/DAU',
+100.0*(sum(case       when a.stat_date='$date$' then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+       max(case       when a.stat_date='$date$' then d.value else 0 end))/
+      (sum(case when a.stat_date=date_sub('$date$', interval 1 day) then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+       max(case       when a.stat_date=date_sub('$date$',interval 1 day) then d.value else 0 end))-100 as 'Rev/DAU DoD % Change',
+100.0*(sum(case       when a.stat_date='$date$' then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+       max(case       when a.stat_date='$date$' then d.value else 0 end))/
+      (sum(case when a.stat_date=date_sub('$date$', interval 7 day) then gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end else 0 end)/
+       max(case       when a.stat_date=date_sub('$date$',interval 7 day) then d.value else 0 end))-100 as 'Rev/DAU WoW % Change'
+from tmp.revenue a
+left join
+lookups.l_fx_rate b
+on a.stat_date=b.fx_date
+and a.currency_code=b.currency_code
+join tmp.fx_rate c
+on a.currency_code=c.currency_code
+left join lookups.l_flurry_game g
+on a.game_id=g.game_id
+and a.client_id=g.device_id
+join tmp.a_metrics_daily_stats d
+on a.client_id=d.client_id
+and case when a.game_id in (15,22,11,18,7,1,5,15,16,23,25,21,24) then a.game_id
+         else -2
+end = case when d.game_id in (15,22,11,18,7,1,5,15,16,23,25,21,24) then d.game_id
+           else -2
+end
+and a.stat_date=d.stat_date
+and d.metric='dau'
+where a.stat_date in ('$date$',date_sub('$date$',interval 1 day),date_sub('$date$',interval 7 day))
+group by 1
+order by 2 desc
+;
 </query>
 <parm name="date" text="Date" type="date"/>
 <parm name="days" text="Number of Days From Date" type="edit"/>
@@ -302,6 +407,7 @@ order by 2 desc
 <column name="MAU" format="number"/>
 <column name="Engagement" format="percent"/>
 <column name="Revenue" format="currency"/>
+<column name="Rev/DAU" format="currency"/>
 <column name="Units" format="number"/>
 <chart position="top" name="DAU" query="dailystats" type="LineChart" title="DAU 30 Day Trends"
 options="height:300, width:400,
@@ -377,6 +483,8 @@ series: {1:{color: 'gray'}}">
 <column name='MAU WoW % Change' format='percent' />
 <column name='Rev DoD % Change' format='percent' />
 <column name='Rev WoW % Change' format='percent' />
+<column name='Rev/DAU DoD % Change' format='percent' />
+<column name='Rev/DAU WoW % Change' format='percent' />
 <column name='Revenue' format='currency' />
 <column name='Revenue/DAU' format='currency' />
 <column name="Avg_DAU" format="number"/>

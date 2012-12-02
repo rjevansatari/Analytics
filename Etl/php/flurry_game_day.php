@@ -65,7 +65,7 @@
 	$start="&startDate=" . $start_date;
 	$end="&endDate=" . $end_date;
 
-	$mdb2=db_connect();
+	$db=db_connect();
 
 	//Get a list of games and API keys
 	$sql = "SELECT game_name, game_id, device_id, apikey
@@ -75,11 +75,11 @@
 		ORDER BY game_name";
 
 
-	$results =run_sql($mdb2, $sql);
+	$results =run_sql($db, $sql);
 
 	debugger("results : " . print_r($results, TRUE));
 
-	while ($row = $results->fetchRow(MDB2_FETCHMODE_ASSOC)) {
+	while ( $row = $results[0]->fetch_assoc() ) {
 	
 		//Check to see if we have a report
 		$metric="ActiveUsers?";
@@ -146,6 +146,7 @@
 	}
 
 	fclose($fh);
+	mysqli_close($db);
 
 function debugger($msg) {
 
