@@ -51,8 +51,13 @@
 	}
 
 	// Show the report results
-	ob_start();
-	$report->toHTML();
-	ob_end_flush();
+	if ( !isset($_GET['_sql']) ) {
+		ob_start();
+		$report->toHTML();
+		ob_end_flush();
+	}
+	else {
+		$report->toSQL();
+	}
 
 ?>

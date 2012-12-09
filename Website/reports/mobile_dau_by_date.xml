@@ -25,7 +25,7 @@ This report shows the DAU by date for a selected game and or client for a specif
 </chart>
 <parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
 	select distinct game_id, game_name
-	from lookups.l_flurry_game
+	from lookups.l_game
 	union
 	select -2, 'All Games'
 	order by 2

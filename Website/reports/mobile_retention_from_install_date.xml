@@ -177,7 +177,7 @@ ORDER BY install_date desc;
 <column name="D30%" format="percent"/>
 <parm name="gameid" value="game_id" display="game_name" text="Game" type="query">
 	select distinct game_id, game_name
-	from lookups.l_flurry_game
+	from lookups.l_game
 	order by 2
 </parm>
 <parm name="clientid" type="select" text ="Client" default="iPhone">

@@ -227,10 +227,10 @@ game_name as 'Game',
     sum(case when metric='mau' and stat_date='$date$' then value else 0 end)-100 as 'MAU DoD % Change',
 100*sum(case when metric='mau' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)/
     sum(case when metric='mau' and stat_date='$date$' then value else 0 end)-100 as 'MAU WoW % Change'
-from tmp.a_metrics a, lookups.l_flurry_game g
+from tmp.a_metrics a, lookups.l_game g
 where a.metric in ('dau','installs', 'mau')
 and a.game_id=g.game_id
-and a.client_id=g.device_id
+and a.client_id=g.client_id
 group by 1
 having sum(case when metric='dau' and stat_date in ('$date$', date_sub('$date$', interval 1 day), date_sub('$date$', interval 7 day)) then value else 0 end) > 0
 order by 2 desc

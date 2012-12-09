@@ -313,6 +313,17 @@ class Query
 		$this->parms = new QueryParms($parms);
 	}
 
+	function sql() {
+		$sql = $this->source;
+
+		if ( $this->getNumberOfParms()>0 ) {	
+			foreach ($this->parms->parameters as $index => $parameter) {
+	        		$sql=str_replace("$".$parameter->column."$", $parameter->value, $sql);
+			}
+		}
+		return $sql;
+	}
+
 	function run() {
 		$sql = $this->source;
 
@@ -904,14 +915,6 @@ class Report
        		case 'number':
                 	return number_format($value);
                	break;
-      		case 'percent':
-              		if (is_numeric($value)) { 
-				return number_format($value,2)."%";
-			}
-			else {
-				return $value;
-			}
-      		break;
               	case 'percent(1)':
               		if (is_numeric($value)) {
 				return number_format($value,1)."%";
@@ -936,8 +939,24 @@ class Report
 				return $value;
 			}
                	break;
+      		case 'percent':
+              		if (is_numeric($value)) { 
+				return number_format($value,2)."%";
+			}
+			else {
+				return $value;
+			}
+      		break;
                	case 'decimal':
                        	return number_format($value,2,'.',',');
+               	break;
+               	case 'currency(3)':
+                       	if (is_numeric($value)) {
+				return "$".number_format($value,3,'.',',');
+			}
+			else {
+				return $value;
+			}
                	break;
                	case 'currency':
                        	if (is_numeric($value)) {
@@ -951,6 +970,15 @@ class Report
 			return $value;
 		}
        	}
+
+	function toSQL() {
+		$sql='';
+		foreach ( $this->queries as $index => $query ) {
+			$sql .= $query->sql();
+		}
+		$sql=str_replace("\n","<br>",$sql);
+		echo $sql;
+	}
 
 	function toHTML() {
 

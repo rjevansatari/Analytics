@@ -55,7 +55,7 @@ from star.s_user_event a, tmp.l_event_outlaw_daily_dash e
 where game_id=23
 and client_id=1
 and a.stat_date between date_sub('$date$',interval $ndays$ day) and '$date$'
-and user_id % 10 = 1
+#and user_id % 10 = 1
 and a.event_id=e.event_id
 ;
 
@@ -512,32 +512,32 @@ from
 (
 select a.install_date, 
 a.user_id, 
-10*max(case when event_id=75 then 1 else 0 end) as FT01_Started,
-10*max(case when event_id=76 then 1 else 0 end) as FT01_Completed,
-10*max(case when event_id=78 then 1 else 0 end) as FT02_Started,
-10*max(case when event_id=77 then 1 else 0 end) as FT02_Completed,
-10*max(case when event_id=80 then 1 else 0 end) as FT03_Started,
-10*max(case when event_id=79 then 1 else 0 end) as FT03_Completed,
-10*max(case when event_id=82 then 1 else 0 end) as FT04_Started,
-10*max(case when event_id=81 then 1 else 0 end) as FT04_Completed,
-10*max(case when event_id=84 then 1 else 0 end) as FT05_Started,
-10*max(case when event_id=83 then 1 else 0 end) as FT05_Completed,
-10*max(case when event_id=85 then 1 else 0 end) as FT06_Started,
-10*max(case when event_id=87 then 1 else 0 end) as FT06_Completed,
-10*max(case when event_id=88 then 1 else 0 end) as FT07_Started,  
-10*max(case when event_id=89 then 1 else 0 end) as FT07_Completed,
-10*max(case when event_id=93 then 1 else 0 end) as FT08_Started,  
-10*max(case when event_id=94 then 1 else 0 end) as FT08_Completed,
-10*max(case when event_id=161 then 1 else 0 end) as FT09_Started,  
-10*max(case when event_id=162 then 1 else 0 end) as FT09_Completed,
-10*max(case when event_id=95 then 1 else 0 end) as FT10_Started,
-10*max(case when event_id=96 then 1 else 0 end) as FT10_Completed,
-10*max(case when event_id=98 then 1 else 0 end) as FT11_Started,
-10*max(case when event_id=101 then 1 else 0 end) as FT11_Completed,
-10*max(case when event_id=103 then 1 else 0 end) as FT12_Started,
-10*max(case when event_id=104 then 1 else 0 end) as FT12_Completed,
-10*max(case when event_id=105 then 1 else 0 end) as FT13_Started,
-10*max(case when event_id=106 then 1 else 0 end) as FT13_Completed
+max(case when event_id=75 then 1 else 0 end) as FT01_Started,
+max(case when event_id=76 then 1 else 0 end) as FT01_Completed,
+max(case when event_id=78 then 1 else 0 end) as FT02_Started,
+max(case when event_id=77 then 1 else 0 end) as FT02_Completed,
+max(case when event_id=80 then 1 else 0 end) as FT03_Started,
+max(case when event_id=79 then 1 else 0 end) as FT03_Completed,
+max(case when event_id=82 then 1 else 0 end) as FT04_Started,
+max(case when event_id=81 then 1 else 0 end) as FT04_Completed,
+max(case when event_id=84 then 1 else 0 end) as FT05_Started,
+max(case when event_id=83 then 1 else 0 end) as FT05_Completed,
+max(case when event_id=85 then 1 else 0 end) as FT06_Started,
+max(case when event_id=87 then 1 else 0 end) as FT06_Completed,
+max(case when event_id=88 then 1 else 0 end) as FT07_Started,  
+max(case when event_id=89 then 1 else 0 end) as FT07_Completed,
+max(case when event_id=93 then 1 else 0 end) as FT08_Started,  
+max(case when event_id=94 then 1 else 0 end) as FT08_Completed,
+max(case when event_id=161 then 1 else 0 end) as FT09_Started,  
+max(case when event_id=162 then 1 else 0 end) as FT09_Completed,
+max(case when event_id=95 then 1 else 0 end) as FT10_Started,
+max(case when event_id=96 then 1 else 0 end) as FT10_Completed,
+max(case when event_id=98 then 1 else 0 end) as FT11_Started,
+max(case when event_id=101 then 1 else 0 end) as FT11_Completed,
+max(case when event_id=103 then 1 else 0 end) as FT12_Started,
+max(case when event_id=104 then 1 else 0 end) as FT12_Completed,
+max(case when event_id=105 then 1 else 0 end) as FT13_Started,
+max(case when event_id=106 then 1 else 0 end) as FT13_Completed
 from tmp.installs_outlaw_daily_dash a
 left join tmp.ftue_outlaw_daily_dash b
 on a.user_id=b.user_id
@@ -545,7 +545,7 @@ where a.install_date between date_sub('$date$',interval $ndays$ day) and '$date$
 group by 1,2
 ) a
 group by 1
-order by 1
+order by 1 desc
 ;
 </query>
 <query time="10" name="purchases" title="Weapon Purchases">
@@ -569,22 +569,22 @@ group by 1,2,3,4,5,6,7
 
 select install_date as "Install Date",
 max(i.value) as Installs,
-10*count(distinct case when gun='musket' then user_id else null end) as Musket,
-10*count(distinct case when gun='cannonpistol' then user_id else null end) as CannonPistol,
-10*count(distinct case when gun='shotgun' then user_id else null end) as PepperBox,
-10*count(distinct case when gun='tarballgun' then user_id else null end) as TarBallGun,
-10*count(distinct case when gun='rifle' then user_id else null end) as Rifle,
-10*count(distinct case when gun='buzzsawyer' then user_id else null end) as BuzzSawyer,
-10*count(distinct case when gun='carbine' then user_id else null end) as Carbine,
-10*count(distinct case when gun='oldsmokey' then user_id else null end) as OldSmokey,
-10*count(distinct case when gun='shortcarbine' then user_id else null end) as ShortCarbine,
-10*count(distinct case when gun='dynogun' then user_id else null end) as DynOGun,
-10*count(distinct case when gun='buffalogun' then user_id else null end) as BuffaloGun,
-10*count(distinct case when gun='applejack' then user_id else null end) as AppleJack,
-10*count(distinct case when gun='lilTimmy' then user_id else null end) as LilTimmy,
-10*count(distinct case when gun='mortarmusket' then user_id else null end) as MortarMusket,
-10*count(distinct case when gun='bulldoggatlin' then user_id else null end) as BullDogGatlin,
-10*count(distinct case when gun='teslalightning' then user_id else null end) as TeslaLightning
+count(distinct case when gun='musket' then user_id else null end) as Musket,
+count(distinct case when gun='cannonpistol' then user_id else null end) as CannonPistol,
+count(distinct case when gun='shotgun' then user_id else null end) as PepperBox,
+count(distinct case when gun='tarballgun' then user_id else null end) as TarBallGun,
+count(distinct case when gun='rifle' then user_id else null end) as Rifle,
+count(distinct case when gun='buzzsawyer' then user_id else null end) as BuzzSawyer,
+count(distinct case when gun='carbine' then user_id else null end) as Carbine,
+count(distinct case when gun='oldsmokey' then user_id else null end) as OldSmokey,
+count(distinct case when gun='shortcarbine' then user_id else null end) as ShortCarbine,
+count(distinct case when gun='dynogun' then user_id else null end) as DynOGun,
+count(distinct case when gun='buffalogun' then user_id else null end) as BuffaloGun,
+count(distinct case when gun='applejack' then user_id else null end) as AppleJack,
+count(distinct case when gun='lilTimmy' then user_id else null end) as LilTimmy,
+count(distinct case when gun='mortarmusket' then user_id else null end) as MortarMusket,
+count(distinct case when gun='bulldoggatlin' then user_id else null end) as BullDogGatlin,
+count(distinct case when gun='teslalightning' then user_id else null end) as TeslaLightning
 from tmp.gunpurchase_outlaw_daily_dash a,
 tmp.a_metrics_outlaw_daily_dash i
 where a.install_date=i.stat_date
@@ -614,22 +614,22 @@ group by 1,2,3,4,5,6,7
 
 select install_date as "Install Date",
 max(i.value) as Installs,
-10*count(distinct case when gun='musket' then user_id else null end) as Musket,
-10*count(distinct case when gun='cannonpistol' then user_id else null end) as CannonPistol,
-10*count(distinct case when gun='shotgun' then user_id else null end) as PepperBox,
-10*count(distinct case when gun='tarballgun' then user_id else null end) as TarBallGun,
-10*count(distinct case when gun='rifle' then user_id else null end) as Rifle,
-10*count(distinct case when gun='buzzsawyer' then user_id else null end) as BuzzSawyer,
-10*count(distinct case when gun='carbine' then user_id else null end) as Carbine,
-10*count(distinct case when gun='oldsmokey' then user_id else null end) as OldSmokey,
-10*count(distinct case when gun='shortcarbine' then user_id else null end) as ShortCarbine,
-10*count(distinct case when gun='dynogun' then user_id else null end) as DynOGun,
-10*count(distinct case when gun='buffalogun' then user_id else null end) as BuffaloGun,
-10*count(distinct case when gun='applejack' then user_id else null end) as AppleJack,
-10*count(distinct case when gun='lilTimmy' then user_id else null end) as LilTimmy,
-10*count(distinct case when gun='mortarmusket' then user_id else null end) as MortarMusket,
-10*count(distinct case when gun='bulldoggatlin' then user_id else null end) as BullDogGatlin,
-10*count(distinct case when gun='teslalightning' then user_id else null end) as TeslaLightning
+count(distinct case when gun='musket' then user_id else null end) as Musket,
+count(distinct case when gun='cannonpistol' then user_id else null end) as CannonPistol,
+count(distinct case when gun='shotgun' then user_id else null end) as PepperBox,
+count(distinct case when gun='tarballgun' then user_id else null end) as TarBallGun,
+count(distinct case when gun='rifle' then user_id else null end) as Rifle,
+count(distinct case when gun='buzzsawyer' then user_id else null end) as BuzzSawyer,
+count(distinct case when gun='carbine' then user_id else null end) as Carbine,
+count(distinct case when gun='oldsmokey' then user_id else null end) as OldSmokey,
+count(distinct case when gun='shortcarbine' then user_id else null end) as ShortCarbine,
+count(distinct case when gun='dynogun' then user_id else null end) as DynOGun,
+count(distinct case when gun='buffalogun' then user_id else null end) as BuffaloGun,
+count(distinct case when gun='applejack' then user_id else null end) as AppleJack,
+count(distinct case when gun='lilTimmy' then user_id else null end) as LilTimmy,
+count(distinct case when gun='mortarmusket' then user_id else null end) as MortarMusket,
+count(distinct case when gun='bulldoggatlin' then user_id else null end) as BullDogGatlin,
+count(distinct case when gun='teslalightning' then user_id else null end) as TeslaLightning
 from tmp.gunupgrade_outlaw_daily_dash a,
 tmp.a_metrics_outlaw_daily_dash i
 where a.install_date=i.stat_date
@@ -641,11 +641,11 @@ order by 1 desc
 <query time="10" name="upgrades2" title="Weapon Upgrades - Type">
 select install_date as "Install Date",
 max(i.value) as Installs,
-10*count(distinct case when upgrade=lower('attachment') then user_id else null end) as Attachment,
-10*count(distinct case when upgrade=lower('barrel') then user_id else null end) as Barrel,
-10*count(distinct case when upgrade=lower('cartridge') then user_id else null end) as Cartridge,
-10*count(distinct case when upgrade=lower('sight') then user_id else null end) as Sight,
-10*count(distinct case when upgrade=lower('stock') then user_id else null end) as Stock
+count(distinct case when upgrade=lower('attachment') then user_id else null end) as Attachment,
+count(distinct case when upgrade=lower('barrel') then user_id else null end) as Barrel,
+count(distinct case when upgrade=lower('cartridge') then user_id else null end) as Cartridge,
+count(distinct case when upgrade=lower('sight') then user_id else null end) as Sight,
+count(distinct case when upgrade=lower('stock') then user_id else null end) as Stock
 from tmp.gunupgrade_outlaw_daily_dash a,
 tmp.a_metrics_outlaw_daily_dash i
 where a.install_date=i.stat_date

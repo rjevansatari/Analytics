@@ -51,6 +51,12 @@
 		$end_date = $options['e'];
 	}
 
+	if ( $options['g'] ) {
+		$gameid="AND game_id=" . $options['g'];
+	}
+	else { 
+		$gameid='';
+	}
 	if ( $options['k'] ) {
 		$apiKey="AND apikey='" . $options['k'] . "'";
 	}
@@ -59,7 +65,7 @@
 	}
 	
 	$url_root = "http://api.flurry.com/appMetrics/";
-        $api_accesscode="apiAccessCode=D6ISF4C16B7HLN6XCVIH";
+        $api_accesscode="apiAccessCode=";
         $api_key="&apiKey=";
 	$date=date("Y-m-d", mktime(0, 0, 0, date("m"),date("d")-1,date("Y")));
 	$start="&startDate=" . $start_date;
@@ -68,12 +74,15 @@
 	$db=db_connect();
 
 	//Get a list of games and API keys
-	$sql = "SELECT game_name, game_id, device_id, apikey
+	$sql = "SELECT game_name, game_id, device_id, apikey, apicode
 		FROM lookups.l_flurry_game
 		WHERE 1=1
 		$apikey
+		$gameid
 		ORDER BY game_name";
 
+
+	echo $sql;
 
 	$results =run_sql($db, $sql);
 
@@ -83,56 +92,52 @@
 	
 		//Check to see if we have a report
 		$metric="ActiveUsers?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_active=get_json($url);
 		sleep(1);
 
 		$metric="NewUsers?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_new=get_json($url);
 		sleep(1);
 
 		$metric="Sessions?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_session=get_json($url);
 		sleep(1);
 
 		$metric="ActiveUsersByWeek?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_week=get_json($url);
 		sleep(1);
 
 		$metric="ActiveUsersByMonth?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_month=get_json($url);
 		sleep(1);
 
 		$metric="MedianSessionLength?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_median=get_json($url);
 		sleep(1);
 
 		$metric="AvgSessionLength?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_avg=get_json($url);
 		sleep(1);
 
 		$metric="RetainedUsers?";
-		$url = $url_root . $metric . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		$url = $url_root . $metric . $api_accesscode .$row['apicode']. $api_key . $row['apikey'] . $start . $end;
 		debugger("URL : $url");
 		$json_retained=get_json($url);
 		sleep(1);
-
-		debugger("JSON Active : " . print_r($json_active, TRUE) );
-		debugger("JSON Install : " . print_r($json_new, TRUE) );
-		debugger("JSON Session : " . print_r($json_session, TRUE) );
 
 		add_value($fh,$json_active,$row['game_id'],$row['device_id']);
 		add_value($fh,$json_new,$row['game_id'],$row['device_id']);

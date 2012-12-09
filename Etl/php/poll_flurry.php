@@ -25,13 +25,14 @@
 	debugger("getops : " . print_r($options,TRUE));
 
 	if ( array_key_exists('o',$options) ) { 
-		$output_file_sessions = "$CSV/" . $options['o'] . '_sessions.csv';
+		$doutput_file_sessions = "$CSV/" . $options['o'] . '_sessions.csv';
 		$output_file_events = "$CSV/" . $options['o'] . '_events.csv';
 		$report_file = "$REPORT/" . "report_" . $options['o'] . ".gz";
 	}
 	else {
 		$output_file_sessions = "$CSV/output_sessions.csv";
 		$output_file_events = "$CSV/output_events.csv";
+		$report_file = "$REPORT/" . "report.gz";
 	}
 	
 	//Get a list of events and parms
@@ -66,13 +67,24 @@
 	}
 
 	//Start and end dates
-	$start_date = $options['s'];
-	$end_date = $options['e'];
+	if ( array_key_exists('s',$options) ) {
+		$start_date = $options['s'];
+	}
+	else {
+		die("ERROR: No start date passed. Exiting...\n");
+	}
 
-	echo "NOTE: Start date is: $start_date\n";
-	echo "NOTE: End date is: $end_date\n";
+	if ( array_key_exists('e',$options) ) {
+		$end_date = $options['e'];
+	}
+	else {
+		die("ERROR: No end date passed. Exiting...\n");
+	}
 
-	if ( $options['k'] ) {
+	note("Start date is: $start_date");
+	note("End date is: $end_date");
+
+	if ( array_key_exists('k',$options) ) { 
 		$apiKey="AND apikey='" . $options['k'] . "'";
 	}
 	else { 
@@ -80,118 +92,208 @@
 	}
 	
 	$url_root = "http://api.flurry.com/rawData/Events?";
-        $api_accesscode="apiAccessCode=D6ISF4C16B7HLN6XCVIH";
+        $api_accesscode="apiAccessCode=";
         $api_key="&apiKey=";
 	$start="&startDate=" . $start_date;
 	$end="&endDate=" . $end_date;
 
 	$db=db_connect();
 	//Get a list of games and API keys
-	$sql = "SELECT game_name, game_id, device_id, apikey
+	$sql = "SELECT game_name, ref_name, game_id, device_id, apikey, apicode
 		FROM lookups.l_flurry_game
 		WHERE 1=1
-		$apiKey
-		ORDER BY game_name";
+		$apiKey";
+	if ( !array_key_exists('k',$options) ) {
+		$sql .= "AND raw_extract=1\n";
+	}
+	$sql .= "ORDER BY game_name\n;";
 
+	# We are going to store the requests, reports and files in an array
+	$urls=array();
+	$reports=array();
+	$files=array();
+
+	# Get a list of games to pull
 	$results = run_sql($db,$sql);
 
-	while ( $row = $results[0]->fetch_assoc() ) {
+	// Loop through the results
+	while ( $row = db_fetch_assoc($results[0]) ) {
 	
-		echo "NOTE: Memory Usage: while row: " . memory_get_usage() . "\n";
-		//Check to see if we have a report
-		$url = $url_root . $api_accesscode . $api_key . $row['apikey'] . $start . $end;
+		// Set URL
+		$url = $url_root . $api_accesscode . $row['apicode'] . $api_key . $row['apikey'] . $start . $end;
+		$urls[] = array('game_id' => $row['game_id'],
+                                'client_id' => $row['device_id'],
+                                'ref_name' => $row['ref_name'],
+                                'url' => $url);
 
-		echo "NOTE:" . date("Y-m-d H:i:s") . ": Curl URL is: $url.\n";
-		$wait_flag=1;
-		$count=1;
-		$json=get_json($url);
+		note("Curl URL for Game: " . $row['game_id'] . ", Client: " . $row['device_id'] . " is:\n$url.");
 
-		while ( $wait_flag == 1 ) {
-
-			echo "NOTE: Memory Usage: while wait: " . memory_get_usage() . "\n";
-		
-			if ( $json != FALSE ) {
-				foreach ($json as $key => $value) {
-					//debugger("JSON KEY : $key, JSON VALUE : $value.");
-					if ( $key == "code" ) {
-						echo "NOTE: " . date("Y-m-d H:i:s") . ": Code returned from JSON. Waiting 5 mins... Count=$count.\n";
-						print_r($value);
-						sleep(300);
-					}
-					if ( $key == "message" ) {
-						echo "NOTE: " . date("Y-m-d H:i:s") . ": Message returned from JSON. Waiting 5 mins... Count=$count.\n";
-						print_r($value);
-						sleep(300);
-						$wait_flag=1;
-						$json=get_json($url);
-						$count++;
-					}
-					if ( $key == 'report' ) {
-						echo "NOTE: " . date("Y-m-d H:i:s") . ": Report returned from JSON.\n";
-						echo "NOTE: " . date("Y-m-d H:i:s") . ": Report as follows:\n";
-						print_r($json);
-						$wait_flag=0;
-					}
-				}
-			}
-			else {
-				echo "NOTE: " . date("Y-m-d H:i:s") .  ": Returned JSON was FALSE. Waiting 5 mins...\n";
-				sleep(300);
-				$wait_flag=1;
-				$json=get_json($url);
-			}
-		}
-
-		$count=1;
-
-		if ( $key == 'report' ) {
-			debugger("Value : " . print_r($value,TRUE));
-			debugger("Got report URL : " . $value['@reportUri']);
-			echo "NOTE: " . date("Y-m-d H:i:s") . ": Got report to process for $start_date to $end_date. Waiting...\n";
-			sleep(300);
-			$report = get_json($value['@reportUri']);
-			$count=1;
-			
-			$rc=FALSE;
-			
-			while ( $rc === FALSE ) { 
-			   while ( $report['@reportReady'] == "false"  && $count <= 100 ) { 
-			   	   //Wait 60 seconds
-			   	   debugger("Report Not Ready : Waiting 5 mins. Count is $count.");
-			   	   echo "NOTE: " . date("Y-m-d H:i:s") . ": Report Not Ready for $start_date to $end_date. Waiting 5 mins... Count is : $count.\n";
-				   sleep(300);
-				   $report = get_json($value['@reportUri']);
-				   $count++;
-			   }
-
-			   $file=get_file($value['@reportUri'], $report_file);
-
-
-			   if ( !array_key_exists('x',$options) ) {
-
-				$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
-				$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
-
-			   	echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file parsing started for $start_date to $end_date.\n";
-				$rc=parse_file($file, $row['game_id'],$row['device_id'], $options);
-				fclose($fhs);
-				fclose($fhe);
-				
-				echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file parsing complete for $start_date to $end_date.\n";
-			   }
-			   else {
-				echo "NOTE: " . date("Y-m-d H:i:s") . ": File $file was not parsed for $start_date to $end_date.\n";
-				$rc = TRUE;
-			   }
-			}
-		}
-		else {
-			echo "NOTE: " . date("Y-m-d H:i:s") . ": Could not get a valid report for $file for $start_date to $end_date.\n";
-		}
 	}
 
 	mysqli_free_result($results[0]);
 	mysqli_close($db);
+
+	$count=1;
+	$n_urls=count($urls);
+
+	// Loop through the games making requests for data
+	while ( $n_urls > count($reports) && $count < 100 ) { 
+
+		get_requests($urls, $reports);
+
+		// Only sleep if we have not finished.
+		if ( $n_urls > count($reports) ) { \
+			get_reports($reports, $files);
+			note("Waiting five minutes for reports. Count=$count.");
+			sleep(300);
+			$count++;
+		}
+
+	}
+	note("Got reports for all games as follows:");
+	print_r($reports);
+
+	if ( $count == 100 ) {
+		die ("ERROR: " . date("Y-m-d H:i:s") . ": Could not get a valid reports for $start_date to $end_date.\n");
+	}
+
+	$count=0;
+
+	$n_reports = count($reports);
+
+	// Loop through the requests parsing data
+	while ( $n_reports > count($files) && $count < 500 ) { 
+
+		get_reports($reports, $files);
+
+		// Only sleep if we have not finished
+		if ( $n_reports > count($files) ) {
+			note("Waiting one minute for file. Count=$count.");
+			sleep(60);
+			$count++;
+		}
+	}
+
+	// Check to see if we hit the limit
+	if ( $count == 500 ) {
+		die ("ERROR: " . date("Y-m-d H:i:s") . ": Could not get valid files for $start_date to $end_date.\n");
+	}
+
+	// Lets hope we got some files
+	if ( count($files) > 0 ) {
+		note("Downloaded all reports for all games between $start_date and $end_date as follows:");
+		print_r($files);
+		echo "\n";
+	}
+
+function get_requests(&$urls, &$reports){
+
+	note("Starting report requests.");
+
+	foreach ( $urls as $index => $game ) {
+
+		$json=get_json($game['url']);
+
+		note("Memory Usage: while wait: " . memory_get_usage());
+	
+		if ( $json != FALSE ) {
+			foreach ($json as $key => $value) {
+				//debugger("JSON KEY : $key, JSON VALUE : $value.");
+				if ( $key == "code" ) {
+					note("Code returned from JSON for Game: " . $game['game_id'] . ", Client: " . $game['client_id'] . " is:");
+					print_r($value);	
+					echo "\n";
+				}
+				if ( $key == "message" ) {
+    					if ( $value == "APICodeCompanyNotFound" ) {
+						die("ERROR: Incorrect API Code found for " . $game['game_id'] . ", Client: " . $game['client_id'] . ".\n");
+					}
+					note("Message returned from JSON for Game: " . $game['game_id'] . ", Client: " . $game['client_id'] . " is:");
+					print_r($value);
+					echo "\n";
+				}
+				if ( $key == 'report' ) {
+					note("Report returned from JSON for Game: " . $game['game_id'] . ", Client: " . $game['client_id'] . " is:");
+					print_r($json);
+					echo "\n";
+					$reports[] = array('game_id' => $game['game_id'],
+                               			'client_id' => $game['client_id'],
+						'ref_name' => $game['ref_name'],
+                               			'request' => $value);
+					// Remove this array entry
+					unset($urls[$index]);
+					note("Removing URL for Game: " . $game['game_id'] . ", Client: " . $game['client_id'] . ".  Array count now: " . count($urls));
+				}
+			}
+		}
+		else {
+			note("Returned JSON for Game: " . $game['game_id'] . ", Client: " . $game['client_id'] . " was FALSE.");
+		}
+	}
+}
+
+
+function get_reports(&$reports, &$files){
+
+	global $start_date;
+	global $end_date;
+	global $CSV;
+	global $REPORT;
+
+	note("Starting file requests.");
+
+	// Work through reports until we have pulled all of them
+	foreach ( $reports as $index => $report ) {
+
+		$json = get_json($report['request']['@reportUri']);
+		
+		if ( $json['@reportReady'] != "false" ) {
+
+		   //Set report file name
+		   $report_file = "$REPORT/" . "report_" . $report['ref_name'] . "_" . $end_date . ".gz";
+		   // Get the report
+		   $file=get_file($report['request']['@reportUri'], $report_file);
+		   note("Got file $file for Game: " . $report['game_id'] . ", Client: " . $report['client_id']);
+
+		   // Are we writing this to a CSV?
+		   if ( !array_key_exists('x',$options) ) {
+
+			// Write to a CSV file - split sessions and events
+		        $output_file_sessions = "$CSV/" . $report['ref_name'] . "_" . $end_date . '_sessions.csv';
+		        $output_file_events = "$CSV/" . $report['ref_name'] . "_" . $end_date . '_events.csv';
+			$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+			$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
+
+		   	note("File $file parsing started for Game: " . $report['game_id'] . ", Client: " . $report['client_id'] . " from $start_date to $end_date.");
+			$rc=parse_file($file, $report['game_id'],$report['client_id'], $options);
+		   	// Remove this entry
+		   	if ( $rc != FALSE ) { 
+		   		note("File $file parsing complete for Game: " . $report['game_id'] . ", Client: " . $report['client_id'] . " from $start_date to $end_date.");
+		   		$files[]= array('game_id' => $report['game_id'],
+                               		'client_id' => $report['client_id'],
+                                               'file' => $file);
+				unset($reports[$index]);
+		   	}
+			else {
+		   		note("File $file could not be parsed.");
+			}
+			fclose($fhs);
+			fclose($fhe);
+		   }
+		   else {
+		   	note("File $file was not parsed for Game: " . $report['game_id'] . ", Client: " . $report['client_id'] . " from $start_date to $end_date.");
+			unset($reports[$index]);
+		   }
+		}
+		else {
+		   	note("File not ready for Game: " . $report['game_id'] . ", Client: " . $report['client_id'] . " from $start_date to $end_date.");
+		}
+	}
+}
+
+function note($msg) {
+   echo "NOTE: " . date("Y-m-d H:i:s") . ": $msg\n";
+}
 
 function debugger($msg) {
 
@@ -209,7 +311,7 @@ function parse_file($file, $game_id, $device_id, $options) {
 
     $user_count=0;
 
-    echo "NOTE: Memory Usage: parse_file: " . memory_get_usage() . "\n";
+    note("Memory Usage: parse_file: " . memory_get_usage() . ".");
 
     # Do we have a zipped file or not?
     if ( substr($file, -3, 3) == '.gz' ) {
@@ -223,9 +325,12 @@ function parse_file($file, $game_id, $device_id, $options) {
 		//debugger("Buffer=$buffer\n");
     		# Check to make sure we have a valid file
     		if ( strpos($buffer, "<head><title>302 Found</title></head>" ) ) {
-			echo "NOTE: " . date("Y-m-d H:i:s") . ": 302 Redirect found for $start_date to $end_date. Waiting...\n";
+			note("302 Redirect found for Game: $game_id, Client: $device_id between $start_date and $end_date.");
 			return FALSE;
     		}
+    		if ( strpos($buffer, "APICodeCompanyNotFound" ) ) {
+			die("ERROR: Incorrect API Code found for Game: $game_id, Client: $device_id between $start_date and $end_date.");
+		}
 
 		# So, we must have a valid JSON
     		$offset=strpos($buffer, 'sessionEvents');
@@ -271,19 +376,18 @@ function parse_file($file, $game_id, $device_id, $options) {
         	gzclose($gz);
     	} 
 	else {
-		echo "ERROR: Could not open gzip file. Exiting...\n";
-		exit (4);
+		die("ERROR: Could not open gzip file. Exiting...");
 	}
    }
 
-   echo "NOTE: ".date("Y-m-d H:i:s").": Processed $user_count users.\n";
+   note("Processed $user_count users for Game: $game_id, Client: $device_id between $start_date and $end_date.");
    return TRUE;
 }
 
 # Get a list of device types
 function get_devices() {
 
-        echo "NOTE: Memory Usage: get_devices: " . memory_get_usage() . "\n";
+        note("Memory Usage: get_devices: " . memory_get_usage() . ".");
 
 	$db=db_connect();
 
@@ -306,7 +410,7 @@ function get_devices() {
 # Get a list of events so that we can map them pre database load
 function get_events() {
 
-        echo "NOTE: Memory Usage: get_events: " . memory_get_usage() . "\n";
+        note("Memory Usage: get_events: " . memory_get_usage() . ".");
 
 	$db=db_connect();
 
@@ -328,7 +432,7 @@ function get_events() {
 
 function get_parms() {
 
-        echo "NOTE: Memory Usage: get_parms: " . memory_get_usage() . "\n";
+        note("Memory Usage: get_parms: " . memory_get_usage() . ".");
 
 	$db=db_connect();
 
@@ -356,7 +460,7 @@ function add_parm($parm_name) {
 	$sql="INSERT INTO lookups.l_parm(parm_name) VALUES ('" . strtolower($parm_name). "'); COMMIT; ";
 	$results = run_sql($db,$sql);
 
-	echo "NOTE: New parm added : $parm_name.\n";
+	note("New parm added : $parm_name.");
 
 	$latest_parms=get_parms();
 
@@ -373,7 +477,7 @@ function add_device($device_name) {
 	$sql="INSERT INTO lookups.l_device_gen(device_gen) VALUES ('" .$device_name . "'); COMMIT; ";
 	$results = run_sql($db,$sql);
 
-	echo "NOTE: New device added : $device_name.\n";
+	note("New device added : $device_name.");
 
 	$latest_devicess=get_devices();
 
@@ -389,7 +493,7 @@ function add_event($event_name) {
 	$sql="INSERT INTO lookups.l_event(event_name) VALUES ('" . strtolower($event_name). "'); COMMIT; ";
 	$results = run_sql($db,$sql);
 
-	echo "NOTE: New event added : $event_name.\n";
+	note("New event added : $event_name.");
 
 	$latest_events=get_events();
 
@@ -510,7 +614,7 @@ function parse_events($time, $object) {
 
 function get_file($url, $file='') {
 
-    echo "NOTE: Memory Usage: get_file: " . memory_get_usage() . "\n";
+    note("Memory Usage: get_file: " . memory_get_usage() . ".");
 
     $report_id = substr($url,strrpos($url,'=',-1)+1);
 
@@ -592,7 +696,7 @@ function get_xml($url) {
 
 function get_json($url) {
 	
-    echo "NOTE: Memory Usage: get_json: " . memory_get_usage() . "\n";
+    note("Memory Usage: get_json: " . memory_get_usage() . ".");
     $ch = curl_init();
 
     curl_setopt_array($ch, array(
@@ -618,14 +722,18 @@ function get_json($url) {
 
     curl_close($ch);
 
-    echo "NOTE: JSON return codes: err : $err errmsg : $errmsg header : ";
-    echo "NOTE: JSON header as follows:\n";
-    print_r($header,TRUE);
 
     if ($json != false) {
         return json_decode($json, TRUE);
     }
     else {
+    	$msg="JSON return codes: err : $err errmsg : $errmsg header : ";
+    	if (!$header && $header != '') {
+    		$msg.=": JSON header as follows:";
+		note($msg);
+		print_r($header,TRUE);
+		echo "\n";
+    	}
         return FALSE;
     }
 }

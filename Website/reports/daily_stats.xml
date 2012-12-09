@@ -286,10 +286,10 @@ game_name as 'Game',
     sum(case when metric='mau' and stat_date='$date$' then value else 0 end)-100 as 'MAU DoD % Change',
 100*sum(case when metric='mau' and stat_date='$date$' then value else 0 end)/
     sum(case when metric='mau' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100 as 'MAU WoW % Change'
-from tmp.a_metrics_daily_stats a, lookups.l_flurry_game g
+from tmp.a_metrics_daily_stats a, lookups.l_game g
 where a.metric in ('dau','installs', 'mau')
 and a.game_id=g.game_id
-and a.client_id=g.device_id
+and a.client_id=g.client_id
 group by 1
 having sum(case when metric='dau' and stat_date in ('$date$', '$date$', date_sub('$date$', interval 7 day)) then value else 0 end) > 0
 order by 2 desc
@@ -382,9 +382,9 @@ on a.stat_date=b.fx_date
 and a.currency_code=b.currency_code
 join tmp.fx_rate c
 on a.currency_code=c.currency_code
-left join lookups.l_flurry_game g
+left join lookups.l_game g
 on a.game_id=g.game_id
-and a.client_id=g.device_id
+and a.client_id=g.client_id
 join tmp.a_metrics_daily_stats d
 on a.client_id=d.client_id
 and case when a.game_id in (15,22,11,18,7,1,5,15,16,23,25,21,24) then a.game_id
@@ -401,14 +401,6 @@ order by 2 desc
 </query>
 <parm name="date" text="Date" type="date"/>
 <parm name="days" text="Number of Days From Date" type="edit"/>
-<column name="Date" format="date"/>
-<column name="DAU" format="number"/>
-<column name="Installs" format="number"/>
-<column name="MAU" format="number"/>
-<column name="Engagement" format="percent"/>
-<column name="Revenue" format="currency"/>
-<column name="Rev/DAU" format="currency"/>
-<column name="Units" format="number"/>
 <chart position="top" name="DAU" query="dailystats" type="LineChart" title="DAU 30 Day Trends"
 options="height:300, width:400,
 series: {1:{color: 'gray'}}">
@@ -469,10 +461,14 @@ series: {1:{color: 'gray'}}">
 <column name='Engagement'/>
 <column name='Avg_Engagement'/>
 </chart>
-<column name='DAU' format='number' />
-<column name='Installs' format='number' />
-<column name='MAU' format='number' />
-<column name='Engagement' format='percent' />
+<column name="Date" format="date"/>
+<column name="DAU" format="number"/>
+<column name="Installs" format="number"/>
+<column name="MAU" format="number"/>
+<column name="Engagement" format="percent"/>
+<column name="Revenue" format="currency"/>
+<column name="Revenue/DAU" format="currency(3)"/>
+<column name="Units" format="number"/>
 <column name='DoD % Change' format='percent' />
 <column name='WoW % Change' format='percent' />
 <column name='DAU DoD % Change' format='percent' />
@@ -486,7 +482,6 @@ series: {1:{color: 'gray'}}">
 <column name='Rev/DAU DoD % Change' format='percent' />
 <column name='Rev/DAU WoW % Change' format='percent' />
 <column name='Revenue' format='currency' />
-<column name='Revenue/DAU' format='currency' />
 <column name="Avg_DAU" format="number"/>
 <column name="Avg_Installs" format="number"/>
 <column name="Avg_MAU" format="number"/>
