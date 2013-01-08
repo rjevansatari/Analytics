@@ -27,13 +27,13 @@
 	note("Running version 1.7");
 
 	if ( array_key_exists('o',$options) ) { 
-		$doutput_file_sessions = "$CSV/" . $options['o'] . '_sessions.csv';
-		$output_file_events = "$CSV/" . $options['o'] . '_events.csv';
+		$doutput_file_sessions = "$CSV/" . $options['o'] . '_sessions';
+		$output_file_events = "$CSV/" . $options['o'] . '_events';
 		$report_file = "$REPORT/" . "report_" . $options['o'] . ".gz";
 	}
 	else {
-		$output_file_sessions = "$CSV/output_sessions.csv";
-		$output_file_events = "$CSV/output_events.csv";
+		$output_file_sessions = "$CSV/output_sessions";
+		$output_file_events = "$CSV/output_events";
 		$report_file = "$REPORT/" . "report.gz";
 	}
 	
@@ -44,8 +44,8 @@
 
 	if ( array_key_exists('z',$options) ) {
 
-		$fhs = fopen($output_file_sessions, 'w') or error("Could not open session output file.");
-		$fhe = fopen($output_file_events,   'w') or error("Could not open events output file.");
+		$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+		$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
 
 		$input_file=$options['z'];
 		debugger("Parsing passed file.");
@@ -53,15 +53,24 @@
 
 		fclose($fhs);
 		fclose($fhe);
+
+		//Rename file
+		rename($output_file_sessions, $output_file_sessons.".csv");
+		rename($output_file_events, $output_file_events.".csv");
+		
 		exit;
 	}
 	if ( array_key_exists('r',$options) ) {
 
-		$fhs = fopen($output_file_sessions, 'w') or error("ERROR: Could not open session output file.");
-		$fhe = fopen($output_file_events,   'w') or error("ERROR: Could not open events output file.");
+		$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+		$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
 
 		$resource=get_file($options['r']);
 		parse_file($resource,$options['g'],$options['c'], $options);
+
+		//Rename file
+		rename($output_file_sessions, $output_file_sessons.".csv");
+		rename($output_file_events, $output_file_events.".csv");
 
 		fclose($fhs);
 		fclose($fhe);
@@ -73,14 +82,14 @@
 		$start_date = $options['s'];
 	}
 	else {
-		error("No start date passed. Exiting...");
+		die("ERROR: No start date passed. Exiting...\n");
 	}
 
 	if ( array_key_exists('e',$options) ) {
 		$end_date = $options['e'];
 	}
 	else {
-		error("No end date passed. Exiting...");
+		die("ERROR: No end date passed. Exiting...\n");
 	}
 
 	note("Start date is: $start_date");
@@ -139,7 +148,7 @@
 	$n_urls=count($urls);
 
 	// Loop through the games making requests for data
-	while ( ($n_urls > count($reports) && $n_urls > count($files)) && $count < 500 ) { 
+	while ( ($n_urls > count($reports) && $n_urls > count($files)) && $count < 100 ) { 
 
 		get_requests($urls, $reports);
 		note("Urls: ". $n_urls . ". Reports: " . count($reports) . ". Files: " . count($files) . ". Count: $count.");
@@ -156,8 +165,8 @@
 	note("Got reports for all games as follows:");
 	print_r($reports);
 
-	if ( $count == 500 ) {
-		error("Could not get a valid reports for $start_date to $end_date.");
+	if ( $count == 100 ) {
+		die ("ERROR: " . date("Y-m-d H:i:s") . ": Could not get a valid reports for $start_date to $end_date.\n");
 	}
 
 	$count=0;
@@ -180,7 +189,7 @@
 
 	// Check to see if we hit the limit
 	if ( $count == 500 ) {
-		error("Could not get valid files for $start_date to $end_date.");
+		die ("ERROR: " . date("Y-m-d H:i:s") . ": Could not get valid files for $start_date to $end_date.\n");
 	}
 
 	// Lets hope we got some files
@@ -198,7 +207,7 @@ function get_requests(&$urls, &$reports){
 
 		$json=get_json($game['url']);
 
-		//debugger("Memory Usage: while wait: " . memory_get_usage());
+		debugger("Memory Usage: while wait: " . memory_get_usage());
 	
 		if ( $json != FALSE ) {
 			foreach ($json as $key => $value) {
@@ -210,7 +219,7 @@ function get_requests(&$urls, &$reports){
 				}
 				if ( $key == "message" ) {
     					if ( $value == "APICodeCompanyNotFound" ) {
-						error("Incorrect API Code found for " . $game['game_id'] . ", Client: " . $game['client_id'].".");
+						die("ERROR: Incorrect API Code found for " . $game['game_id'] . ", Client: " . $game['client_id'] . ".\n");
 					}
 					note("Message returned from JSON for Game: " . $game['game_id'] . ", Client: " . $game['client_id'] . " is:");
 					print_r($value);
@@ -266,10 +275,10 @@ function get_reports(&$reports, &$files){
 		   if ( !array_key_exists('x',$options) ) {
 
 			// Write to a CSV file - split sessions and events
-		        $output_file_sessions = "$CSV/" . $report['ref_name'] . "_" . $end_date . '_sessions.csv';
-		        $output_file_events = "$CSV/" . $report['ref_name'] . "_" . $end_date . '_events.csv';
-			$fhs = fopen($output_file_sessions, 'w') or error("Could not open session output file.");
-			$fhe = fopen($output_file_events,   'w') or error("Could not open events output file.");
+		        $output_file_sessions = "$CSV/" . $report['ref_name'] . "_" . $end_date . '_sessions';
+		        $output_file_events = "$CSV/" . $report['ref_name'] . "_" . $end_date . '_events';
+			$fhs = fopen($output_file_sessions, 'w') or die ("ERROR: Could not open session output file.\n");
+			$fhe = fopen($output_file_events,   'w') or die ("ERROR: Could not open events output file.\n");
 
 		   	note("File $file parsing started for Game: " . $report['game_id'] . ", Client: " . $report['client_id'] . " from $start_date to $end_date.");
 			$rc=parse_file($file, $report['game_id'],$report['client_id'], $options);
@@ -280,6 +289,8 @@ function get_reports(&$reports, &$files){
                                		'client_id' => $report['client_id'],
                                                'file' => $file);
 				unset($reports[$index]);
+				rename($output_file_sessions, $output_file_sessions.".csv");
+				rename($output_file_events, $output_file_events.".csv");
 		   	}
 			else {
 		   		note("File $file could not be parsed.");
@@ -298,6 +309,19 @@ function get_reports(&$reports, &$files){
 	}
 }
 
+function note($msg) {
+   echo "NOTE: " . date("Y-m-d H:i:s") . ": $msg\n";
+}
+
+function debugger($msg) {
+
+   global $options;
+
+   if ( array_key_exists('d',$options)) {
+	echo "DEBUG: " . date("Y-m-d H:i:s") . " $msg\n"; 
+   }
+}
+
 function parse_file($file, $game_id, $device_id, $options) {
 
     global $start_date;
@@ -305,7 +329,7 @@ function parse_file($file, $game_id, $device_id, $options) {
 
     $user_count=0;
 
-    //debugger("Memory Usage: parse_file: " . memory_get_usage() . ".");
+    debugger("Memory Usage: parse_file: " . memory_get_usage() . ".");
 
     # Do we have a zipped file or not?
     if ( substr($file, -3, 3) == '.gz' ) {
@@ -323,7 +347,7 @@ function parse_file($file, $game_id, $device_id, $options) {
 			return FALSE;
     		}
     		if ( strpos($buffer, "APICodeCompanyNotFound" ) ) {
-			error("Incorrect API Code found for Game: $game_id, Client: $device_id between $start_date and $end_date.");
+			die("ERROR: Incorrect API Code found for Game: $game_id, Client: $device_id between $start_date and $end_date.");
 		}
 
 		# So, we must have a valid JSON
@@ -361,7 +385,6 @@ function parse_file($file, $game_id, $device_id, $options) {
 				//debugger("Str2=$str\n");
 			}
                 	$user_count++;
-
 			parse_user($str, $game_id, $device_id, $options);
 			# Get new buffer string
 			$buffer=substr($buffer, $user_end);
@@ -371,7 +394,7 @@ function parse_file($file, $game_id, $device_id, $options) {
         	gzclose($gz);
     	} 
 	else {
-		error("Could not open gzip file. Exiting...");
+		die("ERROR: Could not open gzip file. Exiting...");
 	}
    }
 
@@ -382,7 +405,7 @@ function parse_file($file, $game_id, $device_id, $options) {
 # Get a list of device types
 function get_devices() {
 
-        //debugger("Memory Usage: get_devices: " . memory_get_usage() . ".");
+        debugger("Memory Usage: get_devices: " . memory_get_usage() . ".");
 
 	$db=db_connect();
 
@@ -405,7 +428,7 @@ function get_devices() {
 # Get a list of events so that we can map them pre database load
 function get_events() {
 
-        //debugger("Memory Usage: get_events: " . memory_get_usage() . ".");
+        debugger("Memory Usage: get_events: " . memory_get_usage() . ".");
 
 	$db=db_connect();
 
@@ -427,7 +450,7 @@ function get_events() {
 
 function get_parms() {
 
-        //debugger("Memory Usage: get_parms: " . memory_get_usage() . ".");
+        debugger("Memory Usage: get_parms: " . memory_get_usage() . ".");
 
 	$db=db_connect();
 
@@ -449,10 +472,10 @@ function get_parms() {
 
 function add_parm($parm_name) {
 
-        //debugger("Memory: Usage add_parm: " . memory_get_usage() . "\n");
+        debugger("Memory: Usage add_parm: " . memory_get_usage() . "\n");
 
 	$db=db_connect();
-	$sql="INSERT INTO lookups.l_parm(parm_name) VALUES ('".$db->real_escape_string(strtolower($parm_name))."'); COMMIT; ";
+	$sql="INSERT INTO lookups.l_parm(parm_name) VALUES ('" . strtolower($parm_name). "'); COMMIT; ";
 	$results = run_sql($db,$sql);
 
 	note("New parm added : $parm_name.");
@@ -466,15 +489,15 @@ function add_parm($parm_name) {
 
 function add_device($device_name) {
 
-        //debugger("Memory: Usage add_device: " . memory_get_usage() . "\n");
+        debugger("Memory: Usage add_device: " . memory_get_usage() . "\n");
 
 	$db=db_connect();
-	$sql="INSERT INTO lookups.l_device_gen(device_gen) VALUES ('".$db->real_escape_string($device_name)."'); COMMIT; ";
+	$sql="INSERT INTO lookups.l_device_gen(device_gen) VALUES ('" .$device_name . "'); COMMIT; ";
 	$results = run_sql($db,$sql);
 
 	note("New device added : $device_name.");
 
-	$latest_devices=get_devices();
+	$latest_devicess=get_devices();
 
 	mysqli_close($db);
 	return $latest_devices;
@@ -482,10 +505,10 @@ function add_device($device_name) {
 }
 function add_event($event_name) {
 
-        //debugger("Memory: Usage add_event: " . memory_get_usage() . "\n");
+        debugger("Memory: Usage add_event: " . memory_get_usage() . "\n");
 
 	$db=db_connect();
-	$sql="INSERT INTO lookups.l_event(event_name) VALUES ('".$db->real_escape_string(strtolower($event_name))."'); COMMIT; ";
+	$sql="INSERT INTO lookups.l_event(event_name) VALUES ('" . strtolower($event_name). "'); COMMIT; ";
 	$results = run_sql($db,$sql);
 
 	note("New event added : $event_name.");
@@ -505,13 +528,9 @@ function parse_user($str, $game_id, $client_id, $options) {
 	global $parms;
 	global $devices;
 
-        //debugger("Memory Usage: parse_user: " . memory_get_usage() . "\n");
+        debugger("Memory Usage: parse_user: " . memory_get_usage() . "\n");
 
-	$json=json_decode($str,TRUE);
-	debugger("JSON STR: $str\n\n");
-	debugger("JSON DECODE:");
-	debugger(var_dump($json));
-			
+	$json=json_decode($str);
 	if ( $json != FALSE ) {	
 		foreach ($json as $key => $value) {
 				switch($key) {
@@ -576,52 +595,44 @@ function parse_user($str, $game_id, $client_id, $options) {
 		}
 		unset($datetime);
 	}
-	else {
-		debugger("ERROR: JSON WAS FLASE!");
-	}
 	unset($json);
 }
 
 function parse_events($time, $object) {
 	
-    //debugger("Memory Usage: parse_events: " . memory_get_usage() . "\n");
+    debugger("Memory Usage: parse_events: " . memory_get_usage() . "\n");
 
     $result = array();
+    $parameters=array();
 
     foreach ($object as $object_key => $event) {
-    	$event_parameters=array();
     	foreach ($event as $event_key => $event_value) {
 		switch($event_key) {
 			case 'e':
-   				$event_name=strtolower($event_value);
+   				$event=$event_value;
 				break;
 			case 'o';
 				$event_time=$time+round($event_value/100);
 				break;
 			case 'p';
-				$event_parameters=$event_value;
+				$parameters=$event_value;
 				break;
 		}
 	}
 	//Now we have the event and the event time
 	$datetime = new DateTime("@$event_time", new DateTimeZone('EST')); 
-	$result[] = array('event' => $event_name, 
+	$result[] = array('event' => strtolower($event), 
                           'time' => $datetime->format("Y-m-d H:i:s"),
-			  'parameters' => $event_parameters);
+			  'parameters' => $parameters);
     }
     unset($datetime);
-
-    debugger("EVENT OBJECT:");
-    debugger(var_dump($object));
-    debugger("EVENT RESULT: ");
-    debugger(var_dump($result));
     return $result;
 
 }
 
 function get_file($url, $file='') {
 
-    //debugger("Memory Usage: get_file: " . memory_get_usage() . ".");
+    debugger("Memory Usage: get_file: " . memory_get_usage() . ".");
 
     $report_id = substr($url,strrpos($url,'=',-1)+1);
 
@@ -703,7 +714,7 @@ function get_xml($url) {
 
 function get_json($url) {
 	
-    //debugger("Memory Usage: get_json: " . memory_get_usage() . ".");
+    debugger("Memory Usage: get_json: " . memory_get_usage() . ".");
     $ch = curl_init();
 
     curl_setopt_array($ch, array(

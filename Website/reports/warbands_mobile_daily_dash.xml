@@ -1,0 +1,709 @@
+<xml>
+select install_date as 'Install Date',
+count(distinct user_id) as Installs,
+100*sum(Combat_1_Step_01)/count(distinct user_id) as Combat_1_Step_01,
+100*sum(Combat_1_Step_02)/count(distinct user_id) as Combat_1_Step_02,
+100*sum(Combat_1_Step_03)/count(distinct user_id) as Combat_1_Step_03,
+100*sum(Combat_1_Step_04)/count(distinct user_id) as Combat_1_Step_04,
+100*sum(Combat_1_Step_05)/count(distinct user_id) as Combat_1_Step_05,
+100*sum(Combat_1_Step_06)/count(distinct user_id) as Combat_1_Step_06,
+100*sum(Combat_1_Step_07)/count(distinct user_id) as Combat_1_Step_07,
+100*sum(Combat_1_Step_08)/count(distinct user_id) as Combat_1_Step_08,
+100*sum(Combat_1_Step_09)/count(distinct user_id) as Combat_1_Step_09,
+100*sum(Combat_1_Step_10)/count(distinct user_id) as Combat_1_Step_10,
+100*sum(Combat_1_Step_11)/count(distinct user_id) as Combat_1_Step_11,
+100*sum(Combat_1_Step_12)/count(distinct user_id) as Combat_1_Step_12,
+100*sum(Combat_1_Step_13)/count(distinct user_id) as Combat_1_Step_13,
+100*sum(Combat_2_Step_01)/count(distinct user_id) as Combat_2_Step_01,
+100*sum(Combat_2_Step_02)/count(distinct user_id) as Combat_2_Step_02,
+100*sum(Combat_2_Step_03)/count(distinct user_id) as Combat_2_Step_03,
+100*sum(Combat_2_Step_04)/count(distinct user_id) as Combat_2_Step_04,
+100*sum(Combat_2_Step_05)/count(distinct user_id) as Combat_2_Step_05,
+100*sum(Combat_2_Step_06)/count(distinct user_id) as Combat_2_Step_06,
+100*sum(Combat_2_Step_07)/count(distinct user_id) as Combat_2_Step_07,
+100*sum(Combat_2_Step_08)/count(distinct user_id) as Combat_2_Step_08
+from
+(
+select a.install_date,
+a.user_id,
+max(case when substr(value,1,16)='combat_1_step_1_' then 1 else 0 end) as Combat_1_Step_01,
+max(case when substr(value,1,16)='combat_1_step_2_' then 1 else 0 end) as Combat_1_Step_02,
+max(case when substr(value,1,16)='combat_1_step_3_' then 1 else 0 end) as Combat_1_Step_03,
+max(case when substr(value,1,16)='combat_1_step_4_' then 1 else 0 end) as Combat_1_Step_04,
+max(case when substr(value,1,16)='combat_1_step_5_' then 1 else 0 end) as Combat_1_Step_05,
+max(case when substr(value,1,16)='combat_1_step_6_' then 1 else 0 end) as Combat_1_Step_06,
+max(case when substr(value,1,16)='combat_1_step_7_' then 1 else 0 end) as Combat_1_Step_07,
+max(case when substr(value,1,16)='combat_1_step_8_' then 1 else 0 end) as Combat_1_Step_08,
+max(case when substr(value,1,16)='combat_1_step_9_' then 1 else 0 end) as Combat_1_Step_09,
+max(case when substr(value,1,16)='combat_1_step_10' then 1 else 0 end) as Combat_1_Step_10,
+max(case when substr(value,1,16)='combat_1_step_11' then 1 else 0 end) as Combat_1_Step_11,
+max(case when substr(value,1,16)='combat_1_step_12' then 1 else 0 end) as Combat_1_Step_12,
+max(case when substr(value,1,16)='combat_1_step_13' then 1 else 0 end) as Combat_1_Step_13,
+max(case when substr(value,1,16)='combat_2_step_1_' then 1 else 0 end) as Combat_2_Step_01,
+max(case when substr(value,1,16)='combat_2_step_2_' then 1 else 0 end) as Combat_2_Step_02,
+max(case when substr(value,1,16)='combat_2_step_3_' then 1 else 0 end) as Combat_2_Step_03,
+max(case when substr(value,1,16)='combat_2_step_4_' then 1 else 0 end) as Combat_2_Step_04,
+max(case when substr(value,1,16)='combat_2_step_5_' then 1 else 0 end) as Combat_2_Step_05,
+max(case when substr(value,1,16)='combat_2_step_6_' then 1 else 0 end) as Combat_2_Step_06,
+max(case when substr(value,1,16)='combat_2_step_7_' then 1 else 0 end) as Combat_2_Step_07,
+max(case when substr(value,1,16)='combat_2_step_8_' then 1 else 0 end) as Combat_2_Step_08
+from tmp.installs_warbands_daily_dash a
+left join tmp.events_warbands_daily_dash b
+on a.user_id=b.user_id
+where a.install_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+group by 1,2
+) a
+group by 1
+order by 1 desc
+;
+<title>
+Mobile Warbands Daily Dashboard
+</title>
+<description>
+This report provides daily stats for Warbands. The daily stats are as follows:
+
+o DAU
+o Installs
+o MAU
+o Engagement
+o D1, D7, D30 Retention
+o Revenue
+o Game Activity and Sessions
+
+The report shows day on day (DoD) and week on week (WoW) % changes as well as 30 day trends.
+
+NOTE: Tutorial progress reflect install cohorts of the last 7 days.
+NOTE: MAU is calculated from logged events and may reflect true monthly users.
+NOTE: Revenue is gross.
+NOTE: Retention is based on users who have created a game event so is likely over inflated. 
+</description>
+<query hidden="true" time="10" name="dailystats" title="Warbands 30 Day Stats Trends">
+drop table if exists tmp.a_metrics_warbands_daily_dash;
+drop table if exists tmp.dau_warbands_daily_dash;
+drop table if exists tmp.installs_warbands_daily_dash;
+drop table if exists tmp.retention_summary_warbands_daily_dash;
+drop table if exists tmp.events_warbands_daily_dash;
+drop table if exists tmp.revenue_warbands_daily_dash;
+drop table if exists tmp.fx_rate_warbands_daily_dash;
+
+commit;
+
+#Events
+create table tmp.events_warbands_daily_dash(index(user_id))
+as
+select user_id, stat_date, stat_time, value
+from star.s_user_event a
+where game_id=11
+and event_id=1465
+and parm_id=117
+and client_id=1
+and a.stat_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+;
+
+#DAU
+create table tmp.a_metrics_warbands_daily_dash engine=myisam
+as
+select stat_date,
+game_id,
+client_id,
+cast('dau' as char(13)) as metric,
+cast(sum(value) as decimal(10,2)) as value
+from star.s_game_day
+where metric='ActiveUsersByDay'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+and game_id=11
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Installs
+insert into tmp.a_metrics_warbands_daily_dash
+select stat_date,
+game_id,
+client_id,
+'installs' as metric,
+sum(value) as value
+from star.s_game_day
+where metric='NewUsers'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+and game_id=11
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Sessions
+insert into tmp.a_metrics_warbands_daily_dash
+select stat_date,
+game_id,
+client_id,
+'sessions' as metric,
+1.0*sum(case when metric='Sessions' then value else 0 end)/(1.0*sum(case when metric='ActiveUsersByDay' then value else 0 end)) as value
+from star.s_game_day
+where metric in ('ActiveUsersByDay','Sessions')
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+and game_id=11
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Session Length
+insert into tmp.a_metrics_warbands_daily_dash
+select stat_date,
+game_id,
+client_id,
+'sessionlen' as metric,
+sum(value) as value
+from star.s_game_day
+where metric='MedianSessionLength'
+and stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+and game_id=11
+and client_id=1
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#MAU
+create table tmp.dau_warbands_daily_dash(index(user_id)) engine=MyIsam
+as
+select
+game_id,
+client_id,
+user_id,
+stat_date
+from star.s_user_day
+where game_id=11
+and client_id=1
+group by 1,2,3,4
+;
+
+# 7 Day Averages
+insert into tmp.a_metrics_warbands_daily_dash
+select stat_date,
+game_id,
+client_id,
+'7dau' as metric,
+round(sum(value)/7.0) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau_warbands_daily_dash a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 6 day) and d.date
+and d.date between date_sub('$date$', interval 30 day) and '$date$'
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+# Summarise MAU
+insert into tmp.a_metrics_warbands_daily_dash
+select stat_date,
+game_id,
+client_id,
+'mau' as metric,
+sum(value) as value
+from
+( select d.date as stat_date,
+a.game_id,
+a.client_id,
+count(distinct a.user_id) as value
+from tmp.dau_warbands_daily_dash a, lookups.d_date d
+where a.stat_date between date_sub(d.date, interval 29 day) and d.date
+and d.date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+group by 1,2,3
+) a
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+create table tmp.fx_rate_warbands_daily_dash
+as
+select b.currency_code, b.fx_rate
+from
+(
+        select currency_code, max(fx_date) as fx_date
+                from lookups.l_fx_rate
+                        group by 1
+                        ) a,
+                        lookups.l_fx_rate b
+                        where a.currency_code=b.currency_code
+                        and a.fx_date=b.fx_date
+                        group by 1,2
+                        ;
+
+# Revenue
+create table tmp.revenue_warbands_daily_dash(index(stat_date, currency_code)) engine=myisam
+as
+select start_date as stat_date,
+23 as game_id,
+1 as client_id,
+currency_of_proceeds as currency_code,
+sum(units*net_revenue)/0.7 as gross_revenue
+from star.itunes_sales a
+where start_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+and upper(title) like 'DDWAR%'
+group by 1,2,3,4
+;
+
+#Summarise Revenue
+insert into tmp.a_metrics_warbands_daily_dash
+SELECT stat_date,
+game_id,
+client_id,
+'revenue' as metric,
+sum(gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) as value
+from tmp.revenue_warbands_daily_dash a
+left join
+lookups.l_fx_rate b
+on a.stat_date=b.fx_date
+and a.currency_code=b.currency_code
+join tmp.fx_rate_warbands_daily_dash c
+on a.currency_code=c.currency_code
+where stat_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+#Units
+insert into tmp.a_metrics_warbands_daily_dash
+SELECT start_date as stat_date,
+23 as game_id,
+1 as client_id,
+'units' as metric,
+sum(case when net_revenue>0 then units else 0 end) as value
+from star.itunes_sales a
+where start_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
+and upper(title) like 'DDWAR%'
+group by 1,2,3,4
+order by 1,2,3,4
+;
+
+select stat_date as Date,
+max(a.dau) as DAU,
+max(a.installs) as Installs,
+max(a.mau) as MAU,
+max(a.engagement) as Engagement,
+max(a.revenue) as Revenue,
+max(a.units) as Units,
+sum(b.dau)/(30) as Avg_DAU,
+sum(b.installs)/(30) as Avg_Installs,
+sum(b.mau)/(30) as Avg_MAU,
+max(b.engagement) as Avg_Engagement,
+sum(b.revenue)/(30) as Avg_Revenue,
+sum(b.units)/(30) as Avg_Units
+from
+(
+	select stat_date,
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_warbands_daily_dash
+	where stat_date between date_sub('$date$', interval $ndays$ day) and '$date$'
+	group by 1
+) a,
+(
+	select
+	sum(case when metric='dau' then value else 0 end) as dau,
+	sum(case when metric='installs' then value else 0 end) as installs,
+	sum(case when metric='mau' then value else 0 end) as mau,
+	100*sum(case when metric='7dau' then value else 0 end)/
+	sum(case when metric='mau' then value else 0 end) as engagement,
+	sum(case when metric='revenue' then value else 0 end) as revenue,
+	sum(case when metric='units' then value else 0 end) as units
+	from tmp.a_metrics_warbands_daily_dash
+	where stat_date between date_sub('$date$', interval $ndays$ day) and '$date$'
+) b
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="summary" title="Warbands Daily Summary">
+select
+'DAU' as Metric,
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric='dau'
+group by 1
+union
+select
+'Installs' as Metric,
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric='installs'
+group by 1
+union
+select
+'Sessions/DAU' as Metric,
+format(sum(case when stat_date='$date$' then value else 0 end),2) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric='sessions'
+and game_id=-2
+group by 1
+union
+select
+'Med Session Length' as Metric,
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric='sessionlen'
+and game_id=-2
+group by 1
+union
+select
+'MAU' as Metric,
+format(sum(case when stat_date='$date$' then value else 0 end),0) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric='mau'
+group by 1
+union
+select
+'Revenue' as Metric,
+concat('$',format(sum(case when stat_date='$date$' then value else 0 end),2)) as Value,
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 1 day) then value else 0 end)-100,2),'%') as 'DoD % Change',
+concat(format(100*sum(case when stat_date='$date$' then value else 0 end)/
+sum(case when stat_date=date_sub('$date$', interval 7 day) then value else 0 end)-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric='revenue'
+group by 1
+union
+select
+'Revenue/DAU' as Metric,
+concat('$',format(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+sum(case when metric='dau'     and stat_date='$date$' then value else 0 end),3)) as Value,
+concat(format(100*(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+                   sum(case when metric='dau'     and stat_date='$date$' then value else 0 end))/
+ (sum(case when metric='revenue' and stat_date=date_sub('$date$', interval 1 day) then value else 0 end)/
+  sum(case when metric='dau'     and stat_date=date_sub('$date$', interval 1 day) then value else 0 end))-100,2),'%') as 'DoD % Change',
+  concat(format(100*(sum(case when metric='revenue' and stat_date='$date$' then value else 0 end)/
+                     sum(case when metric='dau'     and stat_date='$date$' then value else 0 end))/
+   (sum(case when metric='revenue' and stat_date=date_sub('$date$', interval 7 day) then value else 0 end)/
+    sum(case when metric='dau'     and stat_date=date_sub('$date$', interval 7 day) then value else 0 end))-100,2),'%') as 'WoW % Change'
+from tmp.a_metrics_warbands_daily_dash
+where metric in('revenue','dau')
+group by 1
+order by 1
+;
+</query>
+<query time="10" name="retention" title="Warbands 30 Day Retention Trends">
+create table tmp.installs_warbands_daily_dash(index(user_id)) engine=MyIsam
+as
+select user_id,
+min(stat_date) as install_date
+from tmp.dau_warbands_daily_dash
+group by 1
+;
+
+create table tmp.retention_summary_warbands_daily_dash engine=MyIsam
+as
+SELECT install_date,
+datediff(stat_date, install_date) as ddiff,
+count(distinct i.user_id) as cnt
+FROM tmp.installs_warbands_daily_dash i
+left join tmp.dau_warbands_daily_dash d
+on i.user_id  = d.user_id
+where stat_date between date_sub('$date$', interval 30+$ndays$ day) and '$date$'
+GROUP BY 1,2
+;
+
+SELECT install_date as "Install Date",
+users as Installs,
+day1 *100.0 / users as "D1%",
+day2 *100.0 / users as "D2%",
+day3 *100.0 / users as "D3%",
+day4 *100.0 / users as "D4%",
+day5 *100.0 / users as "D5%",
+day6 *100.0 / users as "D6%",
+day7 *100.0 / users as "D7%",
+day8 *100.0 / users as "D8%",
+day9 *100.0 / users as "D9%",
+day10 *100.0 / users as "D10%",
+day11 *100.0 / users as "D11%",
+day12 *100.0 / users as "D12%",
+day13 *100.0 / users as "D13%",
+day14 *100.0 / users as "D14%",
+day15 *100.0 / users as "D15%",
+day16 *100.0 / users as "D16%",
+day17 *100.0 / users as "D17%",
+day18 *100.0 / users as "D18%",
+day19 *100.0 / users as "D19%",
+day20 *100.0 / users as "D20%",
+day21 *100.0 / users as "D21%",
+day22 *100.0 / users as "D22%",
+day23 *100.0 / users as "D23%",
+day24 *100.0 / users as "D24%",
+day25 *100.0 / users as "D25%",
+day26 *100.0 / users as "D26%",
+day27 *100.0 / users as "D27%",
+day28 *100.0 / users as "D28%",
+day29 *100.0 / users as "D29%",
+day30 *100.0 / users as "D30%"
+FROM
+(
+SELECT install_date,
+sum(case when ddiff=0 or ddiff is null then cnt else 0 end) users,
+sum(case when ddiff = 1 then cnt else 0 end) day1,
+sum(case when ddiff = 2 then cnt else 0 end) day2,
+sum(case when ddiff = 3 then cnt else 0 end) day3,
+sum(case when ddiff = 4 then cnt else 0 end) day4,
+sum(case when ddiff = 5 then cnt else 0 end) day5,
+sum(case when ddiff = 6 then cnt else 0 end) day6,
+sum(case when ddiff = 7 then cnt else 0 end) day7,
+sum(case when ddiff = 8 then cnt else 0 end) day8,
+sum(case when ddiff = 9 then cnt else 0 end) day9,
+sum(case when ddiff = 10 then cnt else 0 end) day10,
+sum(case when ddiff = 11 then cnt else 0 end) day11,
+sum(case when ddiff = 12 then cnt else 0 end) day12,
+sum(case when ddiff = 13 then cnt else 0 end) day13,
+sum(case when ddiff = 14 then cnt else 0 end) day14,
+sum(case when ddiff = 15 then cnt else 0 end) day15,
+sum(case when ddiff = 16 then cnt else 0 end) day16,
+sum(case when ddiff = 17 then cnt else 0 end) day17,
+sum(case when ddiff = 18 then cnt else 0 end) day18,
+sum(case when ddiff = 19 then cnt else 0 end) day19,
+sum(case when ddiff = 20 then cnt else 0 end) day20,
+sum(case when ddiff = 21 then cnt else 0 end) day21,
+sum(case when ddiff = 22 then cnt else 0 end) day22,
+sum(case when ddiff = 23 then cnt else 0 end) day23,
+sum(case when ddiff = 24 then cnt else 0 end) day24,
+sum(case when ddiff = 25 then cnt else 0 end) day25,
+sum(case when ddiff = 26 then cnt else 0 end) day26,
+sum(case when ddiff = 27 then cnt else 0 end) day27,
+sum(case when ddiff = 28 then cnt else 0 end) day28,
+sum(case when ddiff = 29 then cnt else 0 end) day29,
+sum(case when ddiff = 30 then cnt else 0 end) day30
+FROM
+tmp.retention_summary_warbands_daily_dash
+where install_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+GROUP BY install_date
+) a
+ORDER BY install_date desc;
+;
+</query>
+<query time="10" name="ftue" title="Warbands Tutorial Dropoff">
+select install_date as 'Install Date',
+count(distinct user_id) as Installs,
+100*sum(Combat_1_Step_01)/count(distinct user_id) as Combat_1_Step_01,
+100*sum(Combat_1_Step_02)/count(distinct user_id) as Combat_1_Step_02,
+100*sum(Combat_1_Step_03)/count(distinct user_id) as Combat_1_Step_03,
+100*sum(Combat_1_Step_04)/count(distinct user_id) as Combat_1_Step_04,
+100*sum(Combat_1_Step_05)/count(distinct user_id) as Combat_1_Step_05,
+100*sum(Combat_1_Step_06)/count(distinct user_id) as Combat_1_Step_06,
+100*sum(Combat_1_Step_07)/count(distinct user_id) as Combat_1_Step_07,
+100*sum(Combat_1_Step_08)/count(distinct user_id) as Combat_1_Step_08,
+100*sum(Combat_1_Step_09)/count(distinct user_id) as Combat_1_Step_09,
+100*sum(Combat_1_Step_10)/count(distinct user_id) as Combat_1_Step_10,
+100*sum(Combat_1_Step_11)/count(distinct user_id) as Combat_1_Step_11,
+100*sum(Combat_1_Step_12)/count(distinct user_id) as Combat_1_Step_12,
+100*sum(Combat_1_Step_13)/count(distinct user_id) as Combat_1_Step_13,
+100*sum(Combat_2_Step_01)/count(distinct user_id) as Combat_2_Step_01,
+100*sum(Combat_2_Step_02)/count(distinct user_id) as Combat_2_Step_02,
+100*sum(Combat_2_Step_03)/count(distinct user_id) as Combat_2_Step_03,
+100*sum(Combat_2_Step_04)/count(distinct user_id) as Combat_2_Step_04,
+100*sum(Combat_2_Step_05)/count(distinct user_id) as Combat_2_Step_05,
+100*sum(Combat_2_Step_06)/count(distinct user_id) as Combat_2_Step_06,
+100*sum(Combat_2_Step_07)/count(distinct user_id) as Combat_2_Step_07,
+100*sum(Combat_2_Step_08)/count(distinct user_id) as Combat_2_Step_08
+from
+(
+select a.install_date,
+a.user_id,
+max(case when substr(value,1,16)='combat_1_step_1_' then 1 else 0 end) as Combat_1_Step_01,
+max(case when substr(value,1,16)='combat_1_step_2_' then 1 else 0 end) as Combat_1_Step_02,
+max(case when substr(value,1,16)='combat_1_step_3_' then 1 else 0 end) as Combat_1_Step_03,
+max(case when substr(value,1,16)='combat_1_step_4_' then 1 else 0 end) as Combat_1_Step_04,
+max(case when substr(value,1,16)='combat_1_step_5_' then 1 else 0 end) as Combat_1_Step_05,
+max(case when substr(value,1,16)='combat_1_step_6_' then 1 else 0 end) as Combat_1_Step_06,
+max(case when substr(value,1,16)='combat_1_step_7_' then 1 else 0 end) as Combat_1_Step_07,
+max(case when substr(value,1,16)='combat_1_step_8_' then 1 else 0 end) as Combat_1_Step_08,
+max(case when substr(value,1,16)='combat_1_step_9_' then 1 else 0 end) as Combat_1_Step_09,
+max(case when substr(value,1,16)='combat_1_step_10' then 1 else 0 end) as Combat_1_Step_10,
+max(case when substr(value,1,16)='combat_1_step_11' then 1 else 0 end) as Combat_1_Step_11,
+max(case when substr(value,1,16)='combat_1_step_12' then 1 else 0 end) as Combat_1_Step_12,
+max(case when substr(value,1,16)='combat_1_step_13' then 1 else 0 end) as Combat_1_Step_13,
+max(case when substr(value,1,16)='combat_2_step_1_' then 1 else 0 end) as Combat_2_Step_01,
+max(case when substr(value,1,16)='combat_2_step_2_' then 1 else 0 end) as Combat_2_Step_02,
+max(case when substr(value,1,16)='combat_2_step_3_' then 1 else 0 end) as Combat_2_Step_03,
+max(case when substr(value,1,16)='combat_2_step_4_' then 1 else 0 end) as Combat_2_Step_04,
+max(case when substr(value,1,16)='combat_2_step_5_' then 1 else 0 end) as Combat_2_Step_05,
+max(case when substr(value,1,16)='combat_2_step_6_' then 1 else 0 end) as Combat_2_Step_06,
+max(case when substr(value,1,16)='combat_2_step_7_' then 1 else 0 end) as Combat_2_Step_07,
+max(case when substr(value,1,16)='combat_2_step_8_' then 1 else 0 end) as Combat_2_Step_08
+from tmp.installs_warbands_daily_dash a
+left join tmp.events_warbands_daily_dash b
+on a.user_id=b.user_id
+where a.install_date between date_sub('$date$',interval $ndays$ day) and '$date$'
+and a.install_date between date_sub('$date$',interval 7 day) and '$date$'
+group by 1,2
+) a
+group by 1
+order by 1 desc
+;
+</query>
+<parm name="date" text="Date" type="date"/>
+<parm name="ndays" text="N Days Back" type="edit"/>
+<column name='DAU' format='number' />
+<column name='Installs' format='number' />
+<column name='MAU' format='number' />
+<column name='Engagement' format='percent' />
+<column name="Date" format="date"/>
+<column name="Revenue" format="currency"/>
+<column name='DoD % Change' format='percent' />
+<column name='WoW % Change' format='percent' />
+<column name='DAU DoD % Change' format='percent' />
+<column name='DAU WoW % Change' format='percent' />
+<column name='Installs DoD % Change' format='percent' />
+<column name='Installs WoW % Change' format='percent' />
+<column name='MAU DoD % Change' format='percent' />
+<column name='MAU WoW % Change' format='percent' />
+<column name='Rev DoD % Change' format='percent' />
+<column name='Rev WoW % Change' format='percent' />
+<column name='Revenue' format='currency' />
+<column name='Revenue/DAU' format='currency' />
+<column name="Avg_DAU" format="number"/>
+<column name="Avg_Installs" format="number"/>
+<column name="Avg_MAU" format="number"/>
+<column name="Avg_Engagement" format="percent"/>
+<column name="Avg_Revenue" format="currency"/>
+<column name="Avg_Units" format="number"/>
+<column name="Units" format="number"/>
+<column name="D1%" format="percent"/>
+<column name="D2%" format="percent"/>
+<column name="D3%" format="percent"/>
+<column name="D4%" format="percent"/>
+<column name="D5%" format="percent"/>
+<column name="D6%" format="percent"/>
+<column name="D7%" format="percent"/>
+<column name="D8%" format="percent"/>
+<column name="D9%" format="percent"/>
+<column name="D10%" format="percent"/>
+<column name="D11%" format="percent"/>
+<column name="D12%" format="percent"/>
+<column name="D13%" format="percent"/>
+<column name="D14%" format="percent"/>
+<column name="D15%" format="percent"/>
+<column name="D16%" format="percent"/>
+<column name="D17%" format="percent"/>
+<column name="D18%" format="percent"/>
+<column name="D19%" format="percent"/>
+<column name="D20%" format="percent"/>
+<column name="D21%" format="percent"/>
+<column name="D22%" format="percent"/>
+<column name="D23%" format="percent"/>
+<column name="D24%" format="percent"/>
+<column name="D25%" format="percent"/>
+<column name="D26%" format="percent"/>
+<column name="D27%" format="percent"/>
+<column name="D28%" format="percent"/>
+<column name="D29%" format="percent"/>
+<column name="D30%" format="percent"/>
+<column name="Combat_1_Step_01" format="percent"/>
+<column name="Combat_1_Step_02" format="percent"/>
+<column name="Combat_1_Step_03" format="percent"/>
+<column name="Combat_1_Step_04" format="percent"/>
+<column name="Combat_1_Step_05" format="percent"/>
+<column name="Combat_1_Step_06" format="percent"/>
+<column name="Combat_1_Step_07" format="percent"/>
+<column name="Combat_1_Step_08" format="percent"/>
+<column name="Combat_1_Step_09" format="percent"/>
+<column name="Combat_1_Step_10" format="percent"/>
+<column name="Combat_1_Step_11" format="percent"/>
+<column name="Combat_1_Step_12" format="percent"/>
+<column name="Combat_1_Step_13" format="percent"/>
+<column name="Combat_2_Step_01" format="percent"/>
+<column name="Combat_2_Step_02" format="percent"/>
+<column name="Combat_2_Step_03" format="percent"/>
+<column name="Combat_2_Step_04" format="percent"/>
+<column name="Combat_2_Step_05" format="percent"/>
+<column name="Combat_2_Step_06" format="percent"/>
+<column name="Combat_2_Step_07" format="percent"/>
+<column name="Combat_2_Step_08" format="percent"/>
+<chart position="top" name="DAU" query="dailystats" type="LineChart" title="DAU 30 Day Trends"
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'DAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='DAU'/>
+<column name='Avg_DAU'/>
+</chart>
+<chart position="top" name="Installs" query="dailystats" type="LineChart" title="Install 30 Day Trends" 
+options="height:300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Installs',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Installs'/>
+<column name='Avg_Installs'/>
+</chart>
+<chart position="top" name="MAU" query="dailystats" type="LineChart" title="MAU 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'MAU',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='MAU'/>
+<column name='Avg_MAU'/>
+</chart>
+<chart break="true" position="top" name="Revenue" query="dailystats" type="LineChart" title="Revenue(iOS) 30 Day Trends" 
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Revenue',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Revenue'/>
+<column name='Avg_Revenue'/>
+</chart>
+<chart position="top" name="Units" query="dailystats" type="LineChart" title="Purchases (iOS) 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Units',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Units'/>
+<column name='Avg_Units'/>
+</chart>
+<chart position="top" name="Engagement" query="dailystats" type="LineChart" title="Engagement 30 Day Trends"
+options="height: 300, width:400,
+series: {1:{color: 'gray'}}">
+<haxis options="{showTextEvery:7, slantedText:false, title: 'Date',  titleTextStyle: {color: '#FF0000'}}"/>
+<vaxis options="{minValue: 0, title: 'Engagement',  titleTextStyle: {color: '#FF0000'}}"/>
+<legend options="{position: 'none'}"/>
+<column name='Date'/>
+<column name='Engagement'/>
+<column name='Avg_Engagement'/>
+</chart>
+</xml>

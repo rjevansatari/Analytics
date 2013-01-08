@@ -3,10 +3,10 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-    <script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/utilities/utilities.js"></script> 
-    <script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/calendar/calendar-min.js"></script> 
-    <script src="http://developer.yahoo.com/yui/assets/dpSyntaxHighlighter.js"></script>
-    <script type="text/javascript" src="https://analytics.atari.com/js/cal.js"></script>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/calendar/assets/skins/sam/calendar.css">
+<script src="http://yui.yahooapis.com/2.9.0/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script src="http://yui.yahooapis.com/2.9.0/build/calendar/calendar-min.js"></script>
+<script type="text/javascript" src="https://analytics.atari.com/js/cal.js"></script>
 <style>
 .formcent {
     position:absolute;

@@ -22,15 +22,3 @@
     <link rel="stylesheet" type="text/css" href="http://developer.yahoo.com/yui/assets/dpSyntaxHighlighter.css">
     <link rel="stylesheet" type="text/css" href="https://analytics.atari.com/css/report.css">
 </head>
-<body class="yui-skin-sam">
-<table style='{width:100%}' class='header'>
-<tr>
-<td style='{width:2%}'>&nbsp;</td>
-<td style='{width:18%}'>
-<a href="report_view.php"><img class='report' width='150' height='168' src='images/Atari_NoBadge_NoURL_RGB.jpg' alt='Atari Stats Portal'/></a>
-<br>
-</td>
-<td style='{width:2%}'>&nbsp;</td>
-<td style='{width:78%}'>&nbsp;</td>
-</tr>
-<?php

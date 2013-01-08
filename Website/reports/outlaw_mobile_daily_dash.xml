@@ -205,7 +205,7 @@ currency_of_proceeds as currency_code,
 sum(units*net_revenue)/0.7 as gross_revenue
 from star.itunes_sales a
 where start_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
-and upper(sku) like '%OUTLAW%'
+and upper(title) like 'NEWOUT%' 
 group by 1,2,3,4
 ;
 
@@ -237,7 +237,7 @@ SELECT start_date as stat_date,
 sum(case when net_revenue>0 then units else 0 end) as value
 from star.itunes_sales a
 where start_date between date_sub('$date$', interval $ndays$+7 day) and '$date$'
-and upper(sku) like '%OUTLAW%'
+and upper(title) like 'NEWOUT%' 
 group by 1,2,3,4
 order by 1,2,3,4
 ;

@@ -153,15 +153,6 @@
 	fclose($fh);
 	mysqli_close($db);
 
-function debugger($msg) {
-
-   global $debug;
-
-   if ( $debug ) {
-	$debug->log($msg, PEAR_LOG_DEBUG);
-   }
-}
-
 function add_value($fh, $metric, $game_id, $device_id) {
 	
 	if ( is_array($metric['day']) && array_key_exists('@value',$metric['day']) ) {

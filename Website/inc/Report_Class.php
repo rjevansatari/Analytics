@@ -388,7 +388,7 @@ class Table extends Report
 		}
 
 		//$attrs = array('width' => '600', 'border' => '1', 'class' => 'report');
-		$attrs = array('class' => 'report');
+		$attrs = array('class' => 'report', 'id' => 'id');
 		$rAttrs=array();
 
 		$table = new \HTML_Table($attrs);

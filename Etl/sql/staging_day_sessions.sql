@@ -29,7 +29,7 @@ CREATE INDEX device_id on staging.stage_session_day(device_id(10));
 SELECT game_id, date(log_ts) as Date,
 count(*)
 from staging.stage_session_day
-where date(log_ts)<curdate()
+where date(log_ts) between @start_date and @end_date
 group by 1,2
 ;
 
@@ -37,11 +37,13 @@ DROP TABLE if EXISTS staging.min_ts;
 
 CREATE TABLE staging.min_ts engine=myisam
 as
-select game_id, client_id, min(log_ts) as log_ts
+select game_id, client_id, min(date(log_ts)) as log_date, min(log_ts) as log_ts
 from staging.stage_session_day
-where date(log_ts)=@stat_date
+where date(log_ts) between @start_date and @end_date
 group by 1,2
 ;
+
+CREATE index game on staging.min_ts(game_id, client_id);
 
 # Now remove any data that has since been updated
 DROP TABLE if EXISTS staging.s_user_day;
@@ -73,8 +75,9 @@ and a.client_id=b.client_id
 and timestamp(a.stat_date, a.stat_time)<b.log_ts
 ;
 
-# Create new ids
+SHOW WARNINGS;
 
+# Create New Device ids to user_ids
 insert into star.s_device_master(device_id, device_gen_id, first_date)
 select a.device_id,
 min(a.device_gen_id) as device_gen_id, 
@@ -101,7 +104,7 @@ count(distinct a.log_ts) as sessions
 from staging.stage_session_day a
 join star.s_device_master b
 on a.device_id=b.device_id
-where a.log_ts<now()
+where date(a.log_ts) between @start_date and @end_date
 group by 1,2,3,4,5
 ;
 
@@ -124,7 +127,7 @@ group by 1,2,3
 ;
 
 drop table if exists star.s_user_bkup;
+create index game on staging.s_user (first_date, game_id, client_id);
 rename table star.s_user to star.s_user_bkup;
 rename table staging.s_user to star.s_user;
 
-create index game on star.s_user (first_date, game_id, client_id);

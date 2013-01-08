@@ -23,8 +23,11 @@
 	$user='';
 
 	// Check passed parms
-        $options = getopt("exs:u:");
+        $options = getopt("exr:s:u:");
 
+        if ( array_key_exists('r',$options) ) {
+                $run_level = $options['r'];
+        }
         if ( array_key_exists('e',$options) ) {
                 $email = TRUE;
         }
@@ -47,6 +50,14 @@
 			WHERE (subscription_frequency='daily' or
 			weekday(curdate()) = 0 )
 			AND subscription_id=$sub_id
+			ORDER by subscription_prty";
+	}
+	else if ( isset($run_level) ) {
+		$sql = "SELECT * from reporting.report_subscriptions
+			WHERE (subscription_frequency='daily' or
+			weekday(curdate()) = 0 )
+			AND subscription_run=$run_level
+			AND subscription_code=0
 			ORDER by subscription_prty";
 	}
 	else {

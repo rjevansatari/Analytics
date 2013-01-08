@@ -35,9 +35,9 @@
 	else {
 		// Create report and pass the parameters if any
 		$reportName = ($_GET['_report']);
-		if ( isset($_GET['cache']) ) {
+		if ( isset($_GET['_cache']) ) {
 
-			$report_startts=$_GET['cache'];
+			$report_startts=$_GET['_cache'];
 			$sql = "SELECT report_html from reporting.report_log
 				WHERE report_name='".$reportName."'
 				AND report_startts='".$report_startts."';";
@@ -65,7 +65,7 @@
 
 	while ($row = $result[0]->fetch_assoc()) {
 
-		echo "<tr><td><a href='report_log.php?_report=".$reportName."&cache=".$row['report_startts']."'>".$row['report_startts']."</td></tr>\n";
+		echo "<tr><td><a href='report_log.php?_report=".$reportName."&_cache=".$row['report_startts']."'>".$row['report_startts']."</td></tr>\n";
 	}
 
 	echo "</table>\n";

@@ -72,7 +72,7 @@ function run_sql($db, $sql, $dbtype='mysql') {
 			die("ERROR: MySQL : SQL : " . $sql . "\n" . "ERROR: MSG: " . $results->getMessage() . "\n");
        		}
 	}
-	else if ( $dbtype='mysql' ) {
+	elseif ( $dbtype == 'mysql' ) {
 		if ( $db->multi_query($sql) ) {
 
 			$results[] = $db->store_result();

@@ -211,10 +211,10 @@ class Menu {
 
 			if ( $report == '' ) {
 				echo "<td><a href='report_view.php?_report=".$row['report_name']."'>".$row['report_name']."</a></td>\n";
-				echo "<td><a href='report_log.php?_report=".$row['report_name']."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
+				echo "<td><a href='report_log.php?_report=".$row['report_name']."&_cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
 			}
 			else {
-				echo "<td><a href='report_log.php?_report=".$report."&cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
+				echo "<td><a href='report_log.php?_report=".$report."&_cache=".$row['report_startts']."'>".$row['report_startts']."</a></td>\n";
 			}
 
 			echo "<td>".$row['report_parms']."</td>\n";

@@ -53,7 +53,7 @@ class Subscription
 		$sp3 = strpos($html, "</form>");
 
 		$message .= substr($html,$sp1,$sp2-$sp1);
-		$message .= "<p><a href='https://analytics.atari.com/report_log.php?_report=".$row['subscription_name']."&cache=".$lastRun['report_startts']."'>View This In A Browser</a></p>";
+		$message .= "<p><a href='https://analytics.atari.com/report_log.php?_report=".$row['subscription_name']."&_cache=".$lastRun['report_startts']."'>View This In A Browser</a></p>";
 		$message .= substr($html,$sp3+strlen('</form>'));
 		
 		// Now Email the results

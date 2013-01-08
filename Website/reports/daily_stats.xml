@@ -290,6 +290,7 @@ from tmp.a_metrics_daily_stats a, lookups.l_game g
 where a.metric in ('dau','installs', 'mau')
 and a.game_id=g.game_id
 and a.client_id=g.client_id
+and g.is_live=1
 group by 1
 having sum(case when metric='dau' and stat_date in ('$date$', '$date$', date_sub('$date$', interval 7 day)) then value else 0 end) > 0
 order by 2 desc
@@ -382,9 +383,10 @@ on a.stat_date=b.fx_date
 and a.currency_code=b.currency_code
 join tmp.fx_rate c
 on a.currency_code=c.currency_code
-left join lookups.l_game g
+join lookups.l_game g
 on a.game_id=g.game_id
 and a.client_id=g.client_id
+and g.is_live=1
 join tmp.a_metrics_daily_stats d
 on a.client_id=d.client_id
 and case when a.game_id in (15,22,11,18,7,1,5,15,16,23,25,21,24) then a.game_id
