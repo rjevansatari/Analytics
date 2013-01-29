@@ -9,7 +9,7 @@ CREATE TABLE staging.stage_session_day (
 `version` varchar(16) NOT NULL,
 `device_gen_id` smallint NOT NULL,
 `log_ts` timestamp NOT NULL 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM DEFAULT 
 ;
 
 
@@ -25,5 +25,5 @@ CREATE TABLE staging.stage_event_day_raw (
  `event_id` smallint NOT NULL,
  `parm_id` smallint,
  `value` varchar(32)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM DEFAULT 
 ;

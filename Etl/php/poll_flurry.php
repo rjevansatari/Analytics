@@ -139,7 +139,7 @@
 	$n_urls=count($urls);
 
 	// Loop through the games making requests for data
-	while ( ($n_urls > count($reports) && $n_urls > count($files)) && $count < 500 ) { 
+	while ( ($n_urls > count($reports) && $n_urls > count($files)) && $count < 100 ) { 
 
 		get_requests($urls, $reports);
 		note("Urls: ". $n_urls . ". Reports: " . count($reports) . ". Files: " . count($files) . ". Count: $count.");
@@ -153,11 +153,13 @@
 		}
 
 	}
-	note("Got reports for all games as follows:");
-	print_r($reports);
 
-	if ( $count == 500 ) {
-		error("Could not get a valid reports for $start_date to $end_date.");
+	if ( $count == 100 ) {
+		note("Could not get a valid reports for $start_date to $end_date.");
+	}
+	else {
+		note("Got the following reports as follows:");
+		print_r($reports);
 	}
 
 	$count=0;
@@ -165,7 +167,7 @@
 	$n_reports = count($reports);
 
 	// Loop through the requests parsing data
-	while ( $n_reports > count($files) && $count < 500 ) { 
+	while ( $n_reports > count($files) && $count < 200 ) { 
 
 		get_reports($reports, $files);
 		note("Urls: ". $n_urls . ". Reports: " . count($reports) . ". Files: " . count($files) . ". Count: $count.");
@@ -179,13 +181,13 @@
 	}
 
 	// Check to see if we hit the limit
-	if ( $count == 500 ) {
-		error("Could not get valid files for $start_date to $end_date.");
+	if ( $count == 200 ) {
+		note("Could not get all valid files for $start_date to $end_date.");
 	}
 
 	// Lets hope we got some files
 	if ( count($files) > 0 ) {
-		note("Downloaded all reports for all games between $start_date and $end_date as follows:");
+		note("Downloaded reports for all games between $start_date and $end_date as follows:");
 		print_r($files);
 		echo "\n";
 	}
@@ -509,8 +511,7 @@ function parse_user($str, $game_id, $client_id, $options) {
 
 	$json=json_decode($str,TRUE);
 	debugger("JSON STR: $str\n\n");
-	debugger("JSON DECODE:");
-	debugger(var_dump($json));
+	debugger("JSON DECODE: " . var_dump_to_string($json));
 			
 	if ( $json != FALSE ) {	
 		foreach ($json as $key => $value) {
@@ -611,10 +612,8 @@ function parse_events($time, $object) {
     }
     unset($datetime);
 
-    debugger("EVENT OBJECT:");
-    debugger(var_dump($object));
-    debugger("EVENT RESULT: ");
-    debugger(var_dump($result));
+    debugger("EVENT OBJECT: " . var_dump_to_string($object));
+    debugger("EVENT RESULT: " . var_dump_to_string($result));
     return $result;
 
 }

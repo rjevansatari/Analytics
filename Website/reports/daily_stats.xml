@@ -292,7 +292,7 @@ and a.game_id=g.game_id
 and a.client_id=g.client_id
 and g.is_live=1
 group by 1
-having sum(case when metric='dau' and stat_date in ('$date$', '$date$', date_sub('$date$', interval 7 day)) then value else 0 end) > 0
+having sum(case when metric='dau' and stat_date in ('$date$') then value else 0 end) > 0
 order by 2 desc
 ;
 </query>

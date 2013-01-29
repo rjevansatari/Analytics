@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS staging.stage_game_day_raw (
   `metric` varchar(32) NOT NULL,
   `value` int(11) NOT NULL,
   `create_datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM ;
 
 LOAD DATA LOCAL INFILE '/home/revans/projects/analytics/csv/flurry_game_day.csv' INTO TABLE staging.stage_game_day_raw
 FIELDS TERMINATED BY ','

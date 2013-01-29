@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `stage_user_day_dump` (
   `stat_date` date NOT NULL,
   `stat_time` time DEFAULT NULL,
   `sessions` int(11) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM DEFAULT ;
 
 truncate staging.stage_user_day_dump;
 
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS staging.stage_user_day (
   `stat_date` date NOT NULL,
   `stat_time` time DEFAULT NULL,
   `sessions` int(11) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM DEFAULT ;
 
 truncate table staging.stage_user_day;
 

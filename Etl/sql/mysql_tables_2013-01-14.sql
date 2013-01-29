@@ -16,10 +16,38 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Current Database: `games`
+--
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `games` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
+
+USE `games`;
+
+--
+-- Table structure for table `g_warbands_economy_lookup`
+--
+
+DROP TABLE IF EXISTS `g_warbands_economy_lookup`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `g_warbands_economy_lookup` (
+  `id` smallint(6) DEFAULT NULL,
+  `class` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `name` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `gold` int(11) DEFAULT NULL,
+  `diamonds` int(11) DEFAULT NULL,
+  `price` float DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  UNIQUE KEY `id` (`id`,`class`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Current Database: `lookups`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `lookups` /*!40100 DEFAULT CHARACTER SET latin1 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `lookups` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
 
 USE `lookups`;
 
@@ -33,7 +61,20 @@ DROP TABLE IF EXISTS `d_date`;
 CREATE TABLE `d_date` (
   `date` date NOT NULL,
   KEY `date` (`date`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `l_country_code`
+--
+
+DROP TABLE IF EXISTS `l_country_code`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `l_country_code` (
+  `country` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `country_code` char(2) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -44,12 +85,26 @@ DROP TABLE IF EXISTS `l_device_gen`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `l_device_gen` (
-  `device_gen_id` smallint(6) NOT NULL,
-  `device_gen` varchar(80) NOT NULL,
+  `device_gen_id` smallint(6) NOT NULL AUTO_INCREMENT,
+  `device_gen` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`device_gen_id`),
   UNIQUE KEY `device_gen_id` (`device_gen_id`),
   KEY `device_gen` (`device_gen`(18))
-) ENGINE=MyISAM AUTO_INCREMENT=36 DEFAULT ;
+) ENGINE=MyISAM AUTO_INCREMENT=41 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `l_device_gen_bkup`
+--
+
+DROP TABLE IF EXISTS `l_device_gen_bkup`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `l_device_gen_bkup` (
+  `device_gen_id` smallint(6) NOT NULL AUTO_INCREMENT,
+  `device_gen` varchar(80) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`device_gen_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=32768 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -61,25 +116,11 @@ DROP TABLE IF EXISTS `l_event`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `l_event` (
   `event_id` smallint(6) NOT NULL AUTO_INCREMENT,
-  `event_name` varchar(255) NOT NULL,
+  `event_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`event_id`),
   UNIQUE KEY `event_name_2` (`event_name`),
   KEY `event_name` (`event_name`(25))
-) ENGINE=MyISAM AUTO_INCREMENT=941 DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `l_event_test`
---
-
-DROP TABLE IF EXISTS `l_event_test`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `l_event_test` (
-  `event_id` int(11) NOT NULL AUTO_INCREMENT,
-  `event_name` varchar(255) NOT NULL,
-  UNIQUE KEY `event_id` (`event_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=620 DEFAULT ;
+) ENGINE=MyISAM AUTO_INCREMENT=1618 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -90,16 +131,19 @@ DROP TABLE IF EXISTS `l_flurry_game`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `l_flurry_game` (
-  `version` varchar(8) NOT NULL,
-  `game_name` varchar(80) NOT NULL,
-  `platform` varchar(80) NOT NULL,
+  `version` varchar(8) COLLATE utf8_unicode_ci NOT NULL,
+  `game_name` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
+  `platform` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
   `created_date` date NOT NULL,
-  `apikey` varchar(32) NOT NULL,
+  `apicode` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `apikey` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `game_id` int(11) NOT NULL,
   `device_id` smallint(6) NOT NULL,
   `apple_id` int(11) NOT NULL,
-  `raw_extract` smallint(6) NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT ;
+  `raw_extract` smallint(6) NOT NULL DEFAULT '0',
+  `is_live` tinyint(1) NOT NULL,
+  `ref_name` varchar(16) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -111,9 +155,26 @@ DROP TABLE IF EXISTS `l_fx_rate`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `l_fx_rate` (
   `fx_date` date NOT NULL,
-  `currency_code` char(3) NOT NULL,
+  `currency_code` char(3) COLLATE utf8_unicode_ci NOT NULL,
   `fx_rate` decimal(10,3) NOT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `l_game`
+--
+
+DROP TABLE IF EXISTS `l_game`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `l_game` (
+  `client_id` smallint(6) NOT NULL,
+  `game_id` int(11) NOT NULL,
+  `game_name` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
+  `is_live` tinyint(4) NOT NULL DEFAULT '1',
+  `ref_name` varchar(16) COLLATE utf8_unicode_ci NOT NULL,
+  `launch_date` binary(0) DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -125,11 +186,11 @@ DROP TABLE IF EXISTS `l_parm`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `l_parm` (
   `parm_id` smallint(6) NOT NULL AUTO_INCREMENT,
-  `parm_name` varchar(32) NOT NULL,
+  `parm_name` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`parm_id`),
   UNIQUE KEY `parm_name_2` (`parm_name`),
   KEY `parm_name` (`parm_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=91 DEFAULT ;
+) ENGINE=MyISAM AUTO_INCREMENT=141 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -256,7 +317,7 @@ CREATE TABLE `event` (
   `sql_mode` set('REAL_AS_FLOAT','PIPES_AS_CONCAT','ANSI_QUOTES','IGNORE_SPACE','NOT_USED','ONLY_FULL_GROUP_BY','NO_UNSIGNED_SUBTRACTION','NO_DIR_IN_CREATE','POSTGRESQL','ORACLE','MSSQL','DB2','MAXDB','NO_KEY_OPTIONS','NO_TABLE_OPTIONS','NO_FIELD_OPTIONS','MYSQL323','MYSQL40','ANSI','NO_AUTO_VALUE_ON_ZERO','NO_BACKSLASH_ESCAPES','STRICT_TRANS_TABLES','STRICT_ALL_TABLES','NO_ZERO_IN_DATE','NO_ZERO_DATE','INVALID_DATES','ERROR_FOR_DIVISION_BY_ZERO','TRADITIONAL','NO_AUTO_CREATE_USER','HIGH_NOT_PRECEDENCE','NO_ENGINE_SUBSTITUTION','PAD_CHAR_TO_FULL_LENGTH') NOT NULL DEFAULT '',
   `comment` char(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
   `originator` int(10) unsigned NOT NULL,
-  `time_zone` char(64) CHARACTER SET latin1 NOT NULL DEFAULT 'SYSTEM',
+  `time_zone` char(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `character_set_client` char(32) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
   `collation_connection` char(32) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
   `db_collation` char(32) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
@@ -387,14 +448,14 @@ DROP TABLE IF EXISTS `ndb_binlog_index`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ndb_binlog_index` (
   `Position` bigint(20) unsigned NOT NULL,
-  `File` varchar(255) NOT NULL,
+  `File` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `epoch` bigint(20) unsigned NOT NULL,
   `inserts` bigint(20) unsigned NOT NULL,
   `updates` bigint(20) unsigned NOT NULL,
   `deletes` bigint(20) unsigned NOT NULL,
   `schemaops` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`epoch`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -658,7 +719,7 @@ CREATE TABLE `user` (
 -- Current Database: `reporting`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `reporting` /*!40100 DEFAULT CHARACTER SET latin1 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `reporting` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
 
 USE `reporting`;
 
@@ -672,12 +733,12 @@ DROP TABLE IF EXISTS `navigation`;
 CREATE TABLE `navigation` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `level` int(11) NOT NULL,
-  `name` varchar(32) NOT NULL,
+  `name` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `parent` int(16) NOT NULL,
-  `report` varchar(64) NOT NULL,
-  `title` varchar(256) NOT NULL,
+  `report` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(256) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=25 DEFAULT ;
+) ENGINE=MyISAM AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -688,15 +749,15 @@ DROP TABLE IF EXISTS `report_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `report_log` (
-  `report_name` varchar(64) NOT NULL,
+  `report_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `report_startts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `report_endts` timestamp NULL DEFAULT NULL,
-  `report_parms` varchar(256) DEFAULT NULL,
-  `report_html` text,
-  `report_sql` text,
-  `report_csv` varchar(256) DEFAULT NULL,
+  `report_parms` varchar(256) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `report_html` text COLLATE utf8_unicode_ci,
+  `report_sql` text COLLATE utf8_unicode_ci,
+  `report_csv` varchar(256) COLLATE utf8_unicode_ci DEFAULT NULL,
   `report_code` smallint(6) NOT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -708,43 +769,42 @@ DROP TABLE IF EXISTS `report_subscriptions`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `report_subscriptions` (
   `subscription_id` int(11) NOT NULL AUTO_INCREMENT,
-  `subscription_name` varchar(64) NOT NULL,
-  `subscription_title` varchar(256) NOT NULL,
-  `subscription_parms` varchar(256) DEFAULT NULL,
-  `subscription_frequency` varchar(11) NOT NULL,
+  `subscription_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `subscription_title` varchar(256) COLLATE utf8_unicode_ci NOT NULL,
+  `subscription_parms` varchar(256) COLLATE utf8_unicode_ci NOT NULL,
+  `subscription_frequency` varchar(11) COLLATE utf8_unicode_ci NOT NULL,
   `subscription_prty` int(11) NOT NULL DEFAULT '99',
-  `subscription_list` text NOT NULL,
+  `subscription_run` smallint(6) NOT NULL,
+  `subscription_list` text COLLATE utf8_unicode_ci NOT NULL,
   `subscription_code` int(11) NOT NULL,
   `subscription_create_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`subscription_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT ;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `report_tree`
+--
+
+DROP TABLE IF EXISTS `report_tree`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `report_tree` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sequence` int(11) NOT NULL,
+  `path` varchar(256) COLLATE utf8_unicode_ci NOT NULL,
+  `report` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Current Database: `staging`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `staging` /*!40100 DEFAULT CHARACTER SET latin1 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `staging` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
 
 USE `staging`;
-
---
--- Table structure for table `app_figures_load`
---
-
-DROP TABLE IF EXISTS `app_figures_load`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `app_figures_load` (
-  `stat_date` date NOT NULL,
-  `game_id` int(11) NOT NULL,
-  `client_id` int(11) NOT NULL,
-  `product_id` int(11) NOT NULL,
-  `downloads` int(11) NOT NULL,
-  `updates` int(11) NOT NULL,
-  `revenue` float NOT NULL
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `min_ts`
@@ -756,15 +816,17 @@ DROP TABLE IF EXISTS `min_ts`;
 CREATE TABLE `min_ts` (
   `game_id` smallint(11) NOT NULL,
   `client_id` smallint(11) NOT NULL,
-  `log_ts` timestamp NULL DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
+  `log_date` date DEFAULT NULL,
+  `log_ts` timestamp NULL DEFAULT NULL,
+  KEY `game` (`game_id`,`client_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Current Database: `star`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `star` /*!40100 DEFAULT CHARACTER SET latin1 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `star` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
 
 USE `star`;
 
@@ -783,7 +845,7 @@ CREATE TABLE `app_figures` (
   `downloads` int(11) NOT NULL,
   `updates` int(11) NOT NULL,
   `revenue` float NOT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -801,7 +863,7 @@ CREATE TABLE `app_figures_bkup` (
   `downloads` int(11) NOT NULL,
   `updates` int(11) NOT NULL,
   `revenue` float NOT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -812,26 +874,90 @@ DROP TABLE IF EXISTS `itunes_sales`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `itunes_sales` (
-  `provider` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `provider_country` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `sku` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `developer` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `title` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `version` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `product_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
+  `provider` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `provider_country` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `sku` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `developer` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `product_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `units` int(11) NOT NULL,
   `net_revenue` float NOT NULL,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
-  `customer_currency` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `country_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `currency_of_proceeds` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
-  `apple_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
+  `customer_currency` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `country_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `currency_of_proceeds` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `apple_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `price` float NOT NULL,
-  `promo_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci DEFAULT NULL,
-  `parent_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci DEFAULT NULL,
-  `subscription` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci DEFAULT NULL,
-  `period` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci DEFAULT NULL
+  `promo_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `parent_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `subscription` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `period` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  KEY `start_date` (`start_date`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `itunes_sales_20121230`
+--
+
+DROP TABLE IF EXISTS `itunes_sales_20121230`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `itunes_sales_20121230` (
+  `provider` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `provider_country` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `sku` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `developer` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `product_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `units` int(11) NOT NULL,
+  `net_revenue` float NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `customer_currency` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `country_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `currency_of_proceeds` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `apple_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `price` float NOT NULL,
+  `promo_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `parent_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `subscription` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `period` varchar(255) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `itunes_sales_bkup`
+--
+
+DROP TABLE IF EXISTS `itunes_sales_bkup`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `itunes_sales_bkup` (
+  `provider` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `provider_country` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `sku` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `developer` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `product_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `units` int(11) NOT NULL,
+  `net_revenue` float NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `customer_currency` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `country_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `currency_of_proceeds` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `apple_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `price` float NOT NULL,
+  `promo_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `parent_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `subscription` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `period` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  KEY `start_date` (`start_date`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -844,12 +970,12 @@ DROP TABLE IF EXISTS `s_device_master`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `s_device_master` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
-  `device_id` varchar(80) NOT NULL,
+  `device_id` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
   `device_gen_id` smallint(6) NOT NULL,
   `first_date` date DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   KEY `device_id` (`device_id`(10))
-) ENGINE=MyISAM AUTO_INCREMENT=8688902 DEFAULT ;
+) ENGINE=MyISAM AUTO_INCREMENT=9330782 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -863,10 +989,10 @@ CREATE TABLE `s_game_day` (
   `game_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
   `stat_date` date NOT NULL,
-  `metric` varchar(32) NOT NULL,
+  `metric` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `value` int(11) NOT NULL,
   `create_datetime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -880,10 +1006,10 @@ CREATE TABLE `s_game_day_bkup` (
   `game_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
   `stat_date` date NOT NULL,
-  `metric` varchar(32) NOT NULL,
+  `metric` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `value` int(11) NOT NULL,
   `create_datetime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -900,7 +1026,7 @@ CREATE TABLE `s_user` (
   `first_date` date,
   `last_date` date,
   KEY `game` (`first_date`,`game_id`,`client_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -917,7 +1043,7 @@ CREATE TABLE `s_user_bkup` (
   `first_date` date,
   `last_date` date,
   KEY `game` (`first_date`,`game_id`,`client_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -932,11 +1058,12 @@ CREATE TABLE `s_user_day` (
   `client_id` smallint(6) NOT NULL,
   `device_gen_id` smallint(6) NOT NULL,
   `user_id` int(11) NOT NULL,
+  `version_id` varchar(8) COLLATE utf8_unicode_ci DEFAULT NULL,
   `stat_date` date NOT NULL,
   `stat_time` time NOT NULL,
   `sessions` int(11) NOT NULL,
   KEY `user` (`stat_date`,`game_id`,`client_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -955,7 +1082,7 @@ CREATE TABLE `s_user_day_bkup` (
   `stat_time` time NOT NULL,
   `sessions` int(11) NOT NULL,
   KEY `user` (`stat_date`,`game_id`,`client_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -974,9 +1101,9 @@ CREATE TABLE `s_user_event` (
   `stat_time` time NOT NULL,
   `event_id` smallint(6) NOT NULL,
   `parm_id` smallint(6) DEFAULT NULL,
-  `value` varchar(32) DEFAULT NULL,
+  `value` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   KEY `game` (`stat_date`,`game_id`,`client_id`,`event_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -995,16 +1122,16 @@ CREATE TABLE `s_user_event_bkup` (
   `stat_time` time NOT NULL,
   `event_id` smallint(6) NOT NULL,
   `parm_id` smallint(6) DEFAULT NULL,
-  `value` varchar(32) DEFAULT NULL,
+  `value` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   KEY `game` (`stat_date`,`game_id`,`client_id`,`event_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Current Database: `tmp`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `tmp` /*!40100 DEFAULT CHARACTER SET latin1 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `tmp` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
 
 USE `tmp`;
 
@@ -1019,9 +1146,9 @@ CREATE TABLE `a_metrics_daily_stats` (
   `stat_date` date NOT NULL,
   `game_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
-  `metric` varchar(8) NOT NULL DEFAULT '',
+  `metric` varchar(8) CHARACTER SET latin1 NOT NULL DEFAULT '',
   `value` decimal(32,0) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1035,74 +1162,9 @@ CREATE TABLE `a_metrics_outlaw_daily_dash` (
   `stat_date` date NOT NULL,
   `game_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
-  `metric` varchar(13) NOT NULL DEFAULT '',
+  `metric` varchar(13) CHARACTER SET latin1 NOT NULL DEFAULT '',
   `value` decimal(10,2) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `a_metrics_sbb_daily_dash`
---
-
-DROP TABLE IF EXISTS `a_metrics_sbb_daily_dash`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `a_metrics_sbb_daily_dash` (
-  `stat_date` date NOT NULL,
-  `game_id` int(11) NOT NULL,
-  `client_id` int(11) NOT NULL,
-  `metric` varchar(13) NOT NULL DEFAULT '',
-  `value` decimal(10,2) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `a_metrics_sbb_daily_dash_conversion`
---
-
-DROP TABLE IF EXISTS `a_metrics_sbb_daily_dash_conversion`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `a_metrics_sbb_daily_dash_conversion` (
-  `install_date` date,
-  `ddiff` int(7) DEFAULT NULL,
-  `game_id` int(2) NOT NULL DEFAULT '0',
-  `client_id` smallint(6) NOT NULL,
-  `metric` varchar(10) NOT NULL DEFAULT '',
-  `value` bigint(21) NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `b_a_metrics_daily_stats`
---
-
-DROP TABLE IF EXISTS `b_a_metrics_daily_stats`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `b_a_metrics_daily_stats` (
-  `stat_date` date NOT NULL,
-  `game_id` int(11) NOT NULL,
-  `client_id` int(11) NOT NULL,
-  `metric` varchar(8) DEFAULT NULL,
-  `value` decimal(32,0) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `b_metrics_daily_stats`
---
-
-DROP TABLE IF EXISTS `b_metrics_daily_stats`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `b_metrics_daily_stats` (
-  `stat_date` date NOT NULL,
-  `game_id` int(11) NOT NULL,
-  `client_id` int(11) NOT NULL,
-  `metric` varchar(8) DEFAULT NULL,
-  `value` decimal(32,0) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1118,23 +1180,7 @@ CREATE TABLE `dau_outlaw_daily_dash` (
   `user_id` int(11) NOT NULL,
   `stat_date` date NOT NULL,
   KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dau_sbb_daily_dash`
---
-
-DROP TABLE IF EXISTS `dau_sbb_daily_dash`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dau_sbb_daily_dash` (
-  `game_id` smallint(6) NOT NULL,
-  `client_id` smallint(6) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `stat_date` date NOT NULL,
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1150,9 +1196,9 @@ CREATE TABLE `events_outlaw_daily_dash` (
   `stat_date` date NOT NULL,
   `stat_time` time NOT NULL,
   `parm_id` smallint(6) DEFAULT NULL,
-  `value` varchar(32) DEFAULT NULL,
+  `value` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1168,7 +1214,7 @@ CREATE TABLE `ftue_outlaw_daily_dash` (
   `stat_date` date NOT NULL,
   `stat_time` time NOT NULL,
   KEY `user_id` (`user_id`,`event_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1179,9 +1225,9 @@ DROP TABLE IF EXISTS `fx_rate_outlaw_daily_dash`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `fx_rate_outlaw_daily_dash` (
-  `currency_code` char(3) NOT NULL,
+  `currency_code` char(3) COLLATE utf8_unicode_ci NOT NULL,
   `fx_rate` decimal(10,3) NOT NULL
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1196,10 +1242,10 @@ CREATE TABLE `gunpurchase_outlaw_daily_dash` (
   `install_date` date,
   `stat_date` date NOT NULL,
   `stat_time` time NOT NULL,
-  `event_name` varchar(255) NOT NULL,
-  `gun` varchar(255) NOT NULL DEFAULT '',
-  `location` varchar(255) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT ;
+  `event_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `gun` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `location` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1214,11 +1260,11 @@ CREATE TABLE `gunupgrade_outlaw_daily_dash` (
   `install_date` date,
   `stat_date` date NOT NULL,
   `stat_time` time NOT NULL,
-  `event_name` varchar(255) NOT NULL,
-  `gun` varchar(255) NOT NULL DEFAULT '',
-  `location` varchar(255) NOT NULL DEFAULT '',
-  `upgrade` varchar(255) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT ;
+  `event_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `gun` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `location` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `upgrade` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1232,23 +1278,7 @@ CREATE TABLE `installs_outlaw_daily_dash` (
   `user_id` int(11) NOT NULL,
   `install_date` date,
   KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `installs_sbb_daily_dash`
---
-
-DROP TABLE IF EXISTS `installs_sbb_daily_dash`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `installs_sbb_daily_dash` (
-  `game_id` smallint(6) NOT NULL,
-  `client_id` smallint(6) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `install_date` date,
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1260,138 +1290,9 @@ DROP TABLE IF EXISTS `l_event_outlaw_daily_dash`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `l_event_outlaw_daily_dash` (
   `event_id` smallint(6) NOT NULL DEFAULT '0',
-  `event_name` varchar(255) NOT NULL,
-  `type` varchar(4) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `outlaw_level_dropoff`
---
-
-DROP TABLE IF EXISTS `outlaw_level_dropoff`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `outlaw_level_dropoff` (
-  `user_id` int(11) NOT NULL,
-  `L0_1` bigint(0) DEFAULT NULL,
-  `L0_2` bigint(0) DEFAULT NULL,
-  `L0_3` bigint(0) DEFAULT NULL,
-  `L0_4` bigint(0) DEFAULT NULL,
-  `L0_5` bigint(0) DEFAULT NULL,
-  `L0_6` bigint(0) DEFAULT NULL,
-  `L0_7` bigint(0) DEFAULT NULL,
-  `L0_8` bigint(0) DEFAULT NULL,
-  `L0_9` bigint(0) DEFAULT NULL,
-  `L1_0` bigint(0) DEFAULT NULL,
-  `L1_1` bigint(0) DEFAULT NULL,
-  `L1_2` bigint(0) DEFAULT NULL,
-  `L1_3` bigint(0) DEFAULT NULL,
-  `L1_4` bigint(0) DEFAULT NULL,
-  `L1_5` bigint(0) DEFAULT NULL,
-  `L1_6` bigint(0) DEFAULT NULL,
-  `L1_7` bigint(0) DEFAULT NULL,
-  `L1_8` bigint(0) DEFAULT NULL,
-  `L1_9` bigint(0) DEFAULT NULL,
-  `L2_0` bigint(0) DEFAULT NULL,
-  `L2_1` bigint(0) DEFAULT NULL,
-  `L2_2` bigint(0) DEFAULT NULL,
-  `L2_3` bigint(0) DEFAULT NULL,
-  `L2_4` bigint(0) DEFAULT NULL,
-  `L2_5` bigint(0) DEFAULT NULL,
-  `L2_6` bigint(0) DEFAULT NULL,
-  `L2_7` bigint(0) DEFAULT NULL,
-  `L2_8` bigint(0) DEFAULT NULL,
-  `L2_9` bigint(0) DEFAULT NULL,
-  `L3_0` bigint(0) DEFAULT NULL,
-  `L3_1` bigint(0) DEFAULT NULL,
-  `L3_2` bigint(0) DEFAULT NULL,
-  `L3_3` bigint(0) DEFAULT NULL,
-  `L3_4` bigint(0) DEFAULT NULL,
-  `L3_5` bigint(0) DEFAULT NULL,
-  `L3_6` bigint(0) DEFAULT NULL,
-  `L3_7` bigint(0) DEFAULT NULL,
-  `L3_8` bigint(0) DEFAULT NULL,
-  `L3_9` bigint(0) DEFAULT NULL,
-  `L4_0` bigint(0) DEFAULT NULL,
-  `L4_1` bigint(0) DEFAULT NULL,
-  `L4_2` bigint(0) DEFAULT NULL,
-  `L4_3` bigint(0) DEFAULT NULL,
-  `L4_4` bigint(0) DEFAULT NULL,
-  `L4_5` bigint(0) DEFAULT NULL,
-  `L4_6` bigint(0) DEFAULT NULL,
-  `L4_7` bigint(0) DEFAULT NULL,
-  `L4_8` bigint(0) DEFAULT NULL,
-  `L4_9` bigint(0) DEFAULT NULL,
-  `L5_0` bigint(0) DEFAULT NULL,
-  `L5_1` bigint(0) DEFAULT NULL,
-  `L5_2` bigint(0) DEFAULT NULL,
-  `L5_3` bigint(0) DEFAULT NULL,
-  `L5_4` bigint(0) DEFAULT NULL,
-  `L5_5` bigint(0) DEFAULT NULL,
-  `L5_6` bigint(0) DEFAULT NULL,
-  `L5_7` bigint(0) DEFAULT NULL,
-  `L5_8` bigint(0) DEFAULT NULL,
-  `L5_9` bigint(0) DEFAULT NULL,
-  `L6_0` bigint(0) DEFAULT NULL,
-  `L6_1` bigint(0) DEFAULT NULL,
-  `L6_2` bigint(0) DEFAULT NULL,
-  `L6_3` bigint(0) DEFAULT NULL,
-  `L6_4` bigint(0) DEFAULT NULL,
-  `L6_5` bigint(0) DEFAULT NULL,
-  `L6_6` bigint(0) DEFAULT NULL,
-  `L6_7` bigint(0) DEFAULT NULL,
-  `L6_8` bigint(0) DEFAULT NULL,
-  `L6_9` bigint(0) DEFAULT NULL,
-  `L7_0` bigint(0) DEFAULT NULL,
-  `L7_1` bigint(0) DEFAULT NULL,
-  `L7_2` bigint(0) DEFAULT NULL,
-  `L7_3` bigint(0) DEFAULT NULL,
-  `L7_4` bigint(0) DEFAULT NULL,
-  `L7_5` bigint(0) DEFAULT NULL,
-  `L7_6` bigint(0) DEFAULT NULL,
-  `L7_7` bigint(0) DEFAULT NULL,
-  `L7_8` bigint(0) DEFAULT NULL,
-  `L7_9` bigint(0) DEFAULT NULL,
-  `L8_0` bigint(0) DEFAULT NULL,
-  `L8_1` bigint(0) DEFAULT NULL,
-  `L8_2` bigint(0) DEFAULT NULL,
-  `L8_3` bigint(0) DEFAULT NULL,
-  `L8_4` bigint(0) DEFAULT NULL,
-  `L8_5` bigint(0) DEFAULT NULL,
-  `L8_6` bigint(0) DEFAULT NULL,
-  `L8_7` bigint(0) DEFAULT NULL,
-  `L8_8` bigint(0) DEFAULT NULL,
-  `L8_9` bigint(0) DEFAULT NULL,
-  `L9_0` bigint(0) DEFAULT NULL,
-  `L9_1` bigint(0) DEFAULT NULL,
-  `L9_2` bigint(0) DEFAULT NULL,
-  `L9_3` bigint(0) DEFAULT NULL,
-  `L9_4` bigint(0) DEFAULT NULL,
-  `L9_5` bigint(0) DEFAULT NULL,
-  `L9_6` bigint(0) DEFAULT NULL,
-  `L9_7` bigint(0) DEFAULT NULL,
-  `L9_8` bigint(0) DEFAULT NULL,
-  `L9_9` bigint(0) DEFAULT NULL,
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `pong_events`
---
-
-DROP TABLE IF EXISTS `pong_events`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `pong_events` (
-  `stat_date` date NOT NULL,
-  `stat_time` time NOT NULL,
-  `user_id` int(16) NOT NULL,
-  `event_id` smallint(6) NOT NULL,
-  `parm_id` smallint(6) DEFAULT NULL,
-  `value` varchar(32) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT ;
+  `event_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `type` varchar(4) CHARACTER SET latin1 DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1405,22 +1306,7 @@ CREATE TABLE `retention_summary_outlaw_daily_dash` (
   `install_date` date,
   `ddiff` int(7) DEFAULT NULL,
   `cnt` bigint(21) NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `retention_summary_sbb_daily_dash`
---
-
-DROP TABLE IF EXISTS `retention_summary_sbb_daily_dash`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `retention_summary_sbb_daily_dash` (
-  `game_id` smallint(6) NOT NULL,
-  `install_date` date,
-  `ddiff` int(7) DEFAULT NULL,
-  `cnt` bigint(21) NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1434,44 +1320,22 @@ CREATE TABLE `revenue_outlaw_daily_dash` (
   `stat_date` date NOT NULL,
   `game_id` int(2) NOT NULL DEFAULT '0',
   `client_id` int(1) NOT NULL DEFAULT '0',
-  `currency_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_swedish_ci NOT NULL,
+  `currency_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `gross_revenue` double DEFAULT NULL,
   KEY `stat_date` (`stat_date`,`currency_code`)
-) ENGINE=MyISAM DEFAULT ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `user_death`
+-- Table structure for table `test`
 --
 
-DROP TABLE IF EXISTS `user_death`;
+DROP TABLE IF EXISTS `test`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_death` (
-  `user_id` int(11) NOT NULL,
-  `event_id` int(11) NOT NULL,
-  `parm` varchar(255) NOT NULL,
-  `value` varchar(80) NOT NULL,
-  `stat_date` date NOT NULL,
-  `stat_time` time NOT NULL,
-  KEY `date` (`stat_date`,`stat_time`,`event_id`)
-) ENGINE=MyISAM DEFAULT ;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `user_level`
---
-
-DROP TABLE IF EXISTS `user_level`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_level` (
-  `user_id` int(11) NOT NULL,
-  `stat_date` date NOT NULL,
-  `stat_time` time NOT NULL,
-  `value` varchar(80) NOT NULL,
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT ;
+CREATE TABLE `test` (
+  `col1` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -1483,4 +1347,4 @@ CREATE TABLE `user_level` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2012-11-26 17:08:49
+-- Dump completed on 2013-01-14 16:30:29

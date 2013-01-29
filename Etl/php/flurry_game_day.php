@@ -76,7 +76,7 @@
 	//Get a list of games and API keys
 	$sql = "SELECT game_name, game_id, device_id, apikey, apicode
 		FROM lookups.l_flurry_game
-		WHERE 1=1
+		WHERE is_live=1
 		$apikey
 		$gameid
 		ORDER BY game_name";

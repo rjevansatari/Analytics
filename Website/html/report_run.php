@@ -54,7 +54,13 @@
 	if ( !isset($_GET['_sql']) ) {
 		ob_start();
 		$report->toHTML();
-		ob_end_flush();
+		if ( $report == FALSE ) {
+			ob_clean();
+			echo "<p>There was an error running this report and no output could be produced.<br>";
+		}
+		else {
+			ob_end_flush();
+		}
 	}
 	else {
 		$report->toSQL();

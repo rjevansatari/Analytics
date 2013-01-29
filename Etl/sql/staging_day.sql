@@ -9,7 +9,7 @@ CREATE TABLE staging.stage_user_day (
  `device_gen` varchar(80) NOT NULL,
  `stat_date` date NOT NULL,
  `stat_time` time DEFAULT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM
 ;
 
 
@@ -25,7 +25,7 @@ CREATE TABLE staging.stage_user_event (
  `event` varchar(255) NOT NULL,
  `parm` varchar(255) NOT NULL,
  `value` varchar(80) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM
 ;
 
 # Get sessions

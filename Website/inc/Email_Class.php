@@ -42,6 +42,9 @@ class Subscription
 
 		$lastRun=$this->getLastReportRun($row['subscription_name']);
 		$html=$lastRun['report_html'];
+		if ( $html == '' || $html == 'NULL' ) {
+			return FALSE;
+		}
 
 		// Remove google chart data
 		$css=file_get_contents('/var/www/html/css/mail.css');
@@ -77,6 +80,8 @@ class Subscription
 		else {
 			$mail->send($user, $hdrs, $body);
 		}
+
+		return TRUE;
 	
 	}
 

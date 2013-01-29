@@ -12,7 +12,7 @@ CREATE TABLE staging.app_figures_load (
   `downloads` int(11) NOT NULL,
   `updates` int(11) NOT NULL,
   `revenue` float NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM ;
 
 LOAD DATA LOCAL INFILE '/home/revans/projects/analytics/csv/app_figures_day.csv' INTO TABLE staging.app_figures_load
 FIELDS TERMINATED BY ','

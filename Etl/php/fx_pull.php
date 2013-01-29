@@ -66,15 +66,6 @@
 	}
 	exit;
 
-function debugger($msg) {
-
-   global $debug;
-
-   if ( $debug ) {
-	$debug->log($msg, PEAR_LOG_DEBUG);
-   }
-}
-
 function parse_json($json, $output_file, $fh) {
 
 	foreach ($json as $key => $value) {
@@ -125,7 +116,7 @@ function get_json($url) {
 
     unset($ch);
 
-    debugger("DEBUG : err : $err errmsg : $errmsg header : " . print_r($header,TRUE));
+    debugger("err : $err errmsg : $errmsg header : " . print_r($header,TRUE));
 
     if ($json != false) {
         $data = json_decode($json, TRUE);

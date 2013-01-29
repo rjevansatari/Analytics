@@ -26,6 +26,12 @@ table.parms td {
 }
 
 
+table.report {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	vertical-align: top;
+    	table-layout: fixed;
+}
+
 table.header {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	text-align: center;
@@ -150,6 +156,7 @@ th {
 }
 
 div.parms_passed {
+	text-align: left;
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	font-size: small;
 	font-weight: normal !important;

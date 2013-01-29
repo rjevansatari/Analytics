@@ -5,6 +5,7 @@
 <head>
 <title>Atari Analytics Portal</title>
 <link type="text/css" rel="stylesheet" href="http://yui.yahooapis.com/2.9.0/build/treeview/assets/skins/sam/treeview.css">
+<script src="http://yui.yahooapis.com/3.8.0/build/yui/yui-min.js"></script>
 <script src="http://yui.yahooapis.com/2.9.0/build/yahoo-dom-event/yahoo-dom-event.js" ></script>
 <script src="http://yui.yahooapis.com/2.9.0/build/animation/animation-min.js" ></script>
 <script src="http://yui.yahooapis.com/2.9.0/build/json/json-min.js" ></script>

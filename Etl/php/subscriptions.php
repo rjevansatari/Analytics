@@ -70,6 +70,10 @@
 
 	// Get the results
 	$result = run_sql($db, $sql);
+
+	if ( $result[0]->num_rows <= 0 ) {
+		error("Zero rows returned from subscription report table. Exiting...");
+	}
 	$subscription = new Subscription();
 
 	// Read through the results
@@ -82,13 +86,18 @@
 
 	// This runs the subscriptions
 
+	$rc_return=TRUE;
+
 	if ( $query ) { 
 		foreach ($subscriptions as $index => $value) {
 			//print_r($value);
 			// Run queries
 			$subscription->run($value);
 			if ( $email ) {
-				$subscription->eMail($value, $user);
+				$rc=$subscription->eMail($value, $user);
+				if ( $rc == FALSE ) {
+					$return_rc=FALSE;
+				}
 			}
 
 		}
@@ -97,7 +106,17 @@
 		// This just outputs the subscription
 		foreach ($subscriptions as $index => $value) {
 			//print_r($value);
-			$subscription->eMail($value, $user);
+			$rc=$subscription->eMail($value, $user);
+			if ( $rc == FALSE ) {
+				$return_rc=FALSE;
+			}
 		}
+	}
+
+	if ( $rc_return == FALSE ) {
+		return 4;
+	}
+	else {
+		return 0;
 	}
 ?>

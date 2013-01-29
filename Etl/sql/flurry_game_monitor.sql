@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS staging.stage_game_day_monitor (
   `metric` varchar(16) NOT NULL,
   `value` int(11) NOT NULL,
   `create_datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM DEFAULT ;
 
 truncate table staging.stage_game_day_monitor;
 

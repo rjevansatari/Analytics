@@ -13,7 +13,7 @@ CREATE TABLE staging.stage_session_day (
  `version` varchar(16) NOT NULL,
  `device_gen` varchar(80) NOT NULL,
  `log_ts` timestamp NOT NULL 
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM DEFAULT 
 ;
 
 LOAD DATA LOCAL INFILE '/home/revans/projects/analytics/csv/staging_day_sessions.csv' INTO TABLE staging.stage_session_day 

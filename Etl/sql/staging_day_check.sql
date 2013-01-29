@@ -15,7 +15,7 @@ CREATE TEMPORARY TABLE tmp.stage_day (
  `category` varchar(255) NOT NULL,
  `parm` varchar(255) NOT NULL,
  `value` varchar(80) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM DEFAULT 
 ;
 
 LOAD DATA LOCAL INFILE '/home/revans/projects/analytics/csv/staging_day.csv' INTO TABLE tmp.stage_day 

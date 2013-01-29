@@ -1,0 +1,679 @@
+<xml>
+<title>
+Atari Mobile Weekly Stats Summary
+</title>
+<description>
+NOTE: All revenue data is gross unless otherwise specified and for iOS only.
+</description>
+<query time="10" name="agh" title="AGH 14 Day Summary">
+drop table if exists tmp.revenue;
+drop table if exists tmp.weekly_metrics;
+
+create temporary table tmp.revenue(index(stat_date, currency_code)) engine=myisam
+as
+select case when sku='28278'         then 15
+when sku='28413'                    then 22
+when sku='28475'                    then 11
+when title like 'Asteroids%Gunner%' then 18
+when upper(title) like 'ASTFLU%'    then 7
+when upper(title) like 'ASTFNA%'    then 18
+when upper(title) like 'ATGIOS%'    then 1
+when upper(title) like 'BREBOO%'    then 5
+when upper(title) like 'BREBOP%'    then 15
+when upper(title) like 'CENTOR%'    then 22
+when upper(title) like 'CIRCU%'     then 16
+when upper(title) like 'DDWAR%'     then 11
+when upper(title) like 'NEWOUT%'    then 23
+when upper(title) like 'PNGWRL%'    then 25
+when upper(title) like 'CASINO%'    then 26
+else                                     -1
+end as game_id,
+1 as client_id,
+start_date as stat_date,
+currency_of_proceeds as currency_code,
+country_code,
+sum(units*net_revenue)/0.7 as gross_revenue,
+sum(units) as units
+from star.itunes_sales
+where start_date between date_sub(curdate(), interval '14' day) and date_sub(curdate(), interval '1' day)
+and net_revenue!=0
+group by 1,2,3,4,5
+;
+
+drop table if exists tmp.fx_rate;
+
+create temporary table tmp.fx_rate
+as
+select b.currency_code, b.fx_rate
+from
+(
+select currency_code, max(fx_date) as fx_date
+from lookups.l_fx_rate
+group by 1
+) a,
+lookups.l_fx_rate b
+where a.currency_code=b.currency_code
+and a.fx_date=b.fx_date
+group by 1,2
+;
+
+insert into tmp.revenue
+select game_id,
+1 as client_id,
+stat_date,
+'USD' as currency_code,
+'US' as country_code,
+sum(revenue/0.7) as gross_revenue,
+sum(0) as units
+from star.app_figures
+where stat_date between date_sub(curdate(), interval '14' day) and date_sub(curdate(), interval '1' day)
+and game_id in (21,24)
+group by 1,2,3,4
+;
+
+create table tmp.weekly_metrics
+as
+SELECT 9 as seq,
+case when a.game_id in (1,11,21,23,24,25) then a.game_id
+     else -1
+end as game_id,
+'Gross Revenue' as Metric,
+sum(case when stat_date=date_sub(curdate(), interval '14' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-13$`,
+sum(case when stat_date=date_sub(curdate(), interval '13' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-12$`,
+sum(case when stat_date=date_sub(curdate(), interval '12' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-11$`,
+sum(case when stat_date=date_sub(curdate(), interval '11' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-10$`,
+sum(case when stat_date=date_sub(curdate(), interval '10' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-9$`,
+sum(case when stat_date=date_sub(curdate(), interval '9' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-8$`,
+sum(case when stat_date=date_sub(curdate(), interval '8' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-7$`,
+sum(case when stat_date=date_sub(curdate(), interval '7' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-6$`,
+sum(case when stat_date=date_sub(curdate(), interval '6' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-5$`,
+sum(case when stat_date=date_sub(curdate(), interval '5' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-4$`,
+sum(case when stat_date=date_sub(curdate(), interval '4' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-3$`,
+sum(case when stat_date=date_sub(curdate(), interval '3' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-2$`,
+sum(case when stat_date=date_sub(curdate(), interval '2' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-1$`,
+sum(case when stat_date=date_sub(curdate(), interval '1' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday$`
+from tmp.revenue a
+left join
+lookups.l_fx_rate b
+on a.stat_date=b.fx_date
+and a.currency_code=b.currency_code
+join tmp.fx_rate c
+on a.currency_code=c.currency_code
+left join lookups.l_game g
+on a.game_id=g.game_id
+and a.client_id=g.client_id
+and a.client_id=1
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+select case when metric='NewUsers' Then 1
+when metric='ActiveUsersByDay' then 2
+end as seq, 
+case when a.game_id in (1,11,21,23,24,25) then a.game_id
+     else -1
+end as game_id,
+cast((case when metric='NewUsers' Then 'Installs'
+when metric='ActiveUsersByDay' then 'DAU'
+end) as char(32)) as Metric,
+sum(case when stat_date=date_sub(curdate(), interval '14' day) then value else 0 end) as `$Yesterday-13$`,
+sum(case when stat_date=date_sub(curdate(), interval '13' day) then value else 0 end) as `$Yesterday-12$`,
+sum(case when stat_date=date_sub(curdate(), interval '12' day) then value else 0 end) as `$Yesterday-11$`,
+sum(case when stat_date=date_sub(curdate(), interval '11' day) then value else 0 end) as `$Yesterday-10$`,
+sum(case when stat_date=date_sub(curdate(), interval '10' day) then value else 0 end) as `$Yesterday-9$`,
+sum(case when stat_date=date_sub(curdate(), interval '9' day) then value else 0 end) as `$Yesterday-8$`,
+sum(case when stat_date=date_sub(curdate(), interval '8' day) then value else 0 end) as `$Yesterday-7$`,
+sum(case when stat_date=date_sub(curdate(), interval '7' day) then value else 0 end) as `$Yesterday-6$`,
+sum(case when stat_date=date_sub(curdate(), interval '6' day) then value else 0 end) as `$Yesterday-5$`,
+sum(case when stat_date=date_sub(curdate(), interval '5' day) then value else 0 end) as `$Yesterday-4$`,
+sum(case when stat_date=date_sub(curdate(), interval '4' day) then value else 0 end) as `$Yesterday-3$`,
+sum(case when stat_date=date_sub(curdate(), interval '3' day) then value else 0 end) as `$Yesterday-2$`,
+sum(case when stat_date=date_sub(curdate(), interval '2' day) then value else 0 end) as `$Yesterday-1$`,
+sum(case when stat_date=date_sub(curdate(), interval '1' day) then value else 0 end) as `$Yesterday$`
+from star.s_game_day a
+where metric in ('ActiveUsersByDay','NewUsers')
+and stat_date between date_sub(curdate(), interval '14' day) and date_sub(curdate(), interval '1' day)
+and client_id=1
+group by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 3 as seq,
+a.game_id,
+'DARPU' as Metric,
+a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.metric='Gross Revenue'
+and b.metric='DAU'
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 4 as seq,
+a.game_id,
+'Net DARPU' as Metric,
+0.7*a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+0.7*a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+0.7*a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+0.7*a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+0.7*a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+0.7*a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+0.7*a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+0.7*a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+0.7*a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+0.7*a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+0.7*a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+0.7*a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+0.7*a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+0.7*a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.metric='Gross Revenue'
+and b.metric='DAU'
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 6 as seq,
+case when game_id in (1,11,21,23,24,25) then game_id
+     else -1
+end as game_id,
+'Transactions' as Metric,
+sum(case when stat_date=date_sub(curdate(), interval '14' day) then units else 0 end) as `$Yesterday-13$`,
+sum(case when stat_date=date_sub(curdate(), interval '13' day) then units else 0 end) as `$Yesterday-12$`,
+sum(case when stat_date=date_sub(curdate(), interval '12' day) then units else 0 end) as `$Yesterday-11$`,
+sum(case when stat_date=date_sub(curdate(), interval '11' day) then units else 0 end) as `$Yesterday-10$`,
+sum(case when stat_date=date_sub(curdate(), interval '10' day) then units else 0 end) as `$Yesterday-9$`,
+sum(case when stat_date=date_sub(curdate(), interval '9' day) then units else 0 end) as `$Yesterday-8$`,
+sum(case when stat_date=date_sub(curdate(), interval '8' day) then units else 0 end) as `$Yesterday-7$`,
+sum(case when stat_date=date_sub(curdate(), interval '7' day) then units else 0 end) as `$Yesterday-6$`,
+sum(case when stat_date=date_sub(curdate(), interval '6' day) then units else 0 end) as `$Yesterday-5$`,
+sum(case when stat_date=date_sub(curdate(), interval '5' day) then units else 0 end) as `$Yesterday-4$`,
+sum(case when stat_date=date_sub(curdate(), interval '4' day) then units else 0 end) as `$Yesterday-3$`,
+sum(case when stat_date=date_sub(curdate(), interval '3' day) then units else 0 end) as `$Yesterday-2$`,
+sum(case when stat_date=date_sub(curdate(), interval '2' day) then units else 0 end) as `$Yesterday-1$`,
+sum(case when stat_date=date_sub(curdate(), interval '1' day) then units else 0 end) as `$Yesterday$`
+from tmp.revenue a
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 5 as seq,
+a.game_id,
+'Net DARPPU' as Metric,
+0.7*a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+0.7*a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+0.7*a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+0.7*a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+0.7*a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+0.7*a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+0.7*a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+0.7*a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+0.7*a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+0.7*a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+0.7*a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+0.7*a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+0.7*a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+0.7*a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.metric='Gross Revenue'
+and b.metric='Transactions'
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 7 as seq,
+a.game_id,
+'Conversion' as Metric,
+100.0*a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+100.0*a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+100.0*a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+100.0*a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+100.0*a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+100.0*a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+100.0*a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+100.0*a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+100.0*a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+100.0*a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+100.0*a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+100.0*a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+100.0*a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+100.0*a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.metric='Transactions'
+and b.metric='DAU'
+group by 1,2,3
+order by 1,2,3
+;
+
+# Calculate the totals for all games
+insert into tmp.weekly_metrics
+SELECT 9 as seq,
+-2 as game_id,
+'Gross Revenue' as Metric,
+sum(case when stat_date=date_sub(curdate(), interval '14' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-13$`,
+sum(case when stat_date=date_sub(curdate(), interval '13' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-12$`,
+sum(case when stat_date=date_sub(curdate(), interval '12' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-11$`,
+sum(case when stat_date=date_sub(curdate(), interval '11' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-10$`,
+sum(case when stat_date=date_sub(curdate(), interval '10' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-9$`,
+sum(case when stat_date=date_sub(curdate(), interval '9' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-8$`,
+sum(case when stat_date=date_sub(curdate(), interval '8' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-7$`,
+sum(case when stat_date=date_sub(curdate(), interval '7' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-6$`,
+sum(case when stat_date=date_sub(curdate(), interval '6' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-5$`,
+sum(case when stat_date=date_sub(curdate(), interval '5' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-4$`,
+sum(case when stat_date=date_sub(curdate(), interval '4' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-3$`,
+sum(case when stat_date=date_sub(curdate(), interval '3' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-2$`,
+sum(case when stat_date=date_sub(curdate(), interval '2' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday-1$`,
+sum(case when stat_date=date_sub(curdate(), interval '1' day) then (gross_revenue/case when b.fx_rate is null then c.fx_rate else b.fx_rate end) else 0 end) as `$Yesterday$`
+from tmp.revenue a
+left join
+lookups.l_fx_rate b
+on a.stat_date=b.fx_date
+and a.currency_code=b.currency_code
+join tmp.fx_rate c
+on a.currency_code=c.currency_code
+left join lookups.l_game g
+on a.game_id=g.game_id
+and a.client_id=g.client_id
+and a.client_id=1
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+select case when metric='NewUsers' Then 1
+when metric='ActiveUsersByDay' then 2
+end as seq, 
+-2 as game_id, 
+cast((case when metric='NewUsers' Then 'Installs'
+when metric='ActiveUsersByDay' then 'DAU'
+end) as char(32)) as Metric,
+sum(case when stat_date=date_sub(curdate(), interval '14' day) then value else 0 end) as `$Yesterday-13$`,
+sum(case when stat_date=date_sub(curdate(), interval '13' day) then value else 0 end) as `$Yesterday-12$`,
+sum(case when stat_date=date_sub(curdate(), interval '12' day) then value else 0 end) as `$Yesterday-11$`,
+sum(case when stat_date=date_sub(curdate(), interval '11' day) then value else 0 end) as `$Yesterday-10$`,
+sum(case when stat_date=date_sub(curdate(), interval '10' day) then value else 0 end) as `$Yesterday-9$`,
+sum(case when stat_date=date_sub(curdate(), interval '9' day) then value else 0 end) as `$Yesterday-8$`,
+sum(case when stat_date=date_sub(curdate(), interval '8' day) then value else 0 end) as `$Yesterday-7$`,
+sum(case when stat_date=date_sub(curdate(), interval '7' day) then value else 0 end) as `$Yesterday-6$`,
+sum(case when stat_date=date_sub(curdate(), interval '6' day) then value else 0 end) as `$Yesterday-5$`,
+sum(case when stat_date=date_sub(curdate(), interval '5' day) then value else 0 end) as `$Yesterday-4$`,
+sum(case when stat_date=date_sub(curdate(), interval '4' day) then value else 0 end) as `$Yesterday-3$`,
+sum(case when stat_date=date_sub(curdate(), interval '3' day) then value else 0 end) as `$Yesterday-2$`,
+sum(case when stat_date=date_sub(curdate(), interval '2' day) then value else 0 end) as `$Yesterday-1$`,
+sum(case when stat_date=date_sub(curdate(), interval '1' day) then value else 0 end) as `$Yesterday$`
+from star.s_game_day
+where metric in ('ActiveUsersByDay','NewUsers')
+and stat_date between date_sub(curdate(), interval '14' day) and date_sub(curdate(), interval '1' day)
+and client_id=1
+group by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 3 as seq,
+-2,
+'DARPU' as Metric,
+a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.game_id=-2
+and a.metric='Gross Revenue'
+and b.metric='DAU'
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 4 as seq,
+-2,
+'Net DARPU' as Metric,
+0.7*a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+0.7*a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+0.7*a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+0.7*a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+0.7*a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+0.7*a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+0.7*a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+0.7*a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+0.7*a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+0.7*a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+0.7*a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+0.7*a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+0.7*a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+0.7*a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.game_id=-2
+and a.metric='Gross Revenue'
+and b.metric='DAU'
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 6 as seq,
+-2,
+'Transactions' as Metric,
+sum(case when stat_date=date_sub(curdate(), interval '14' day) then units else 0 end) as `$Yesterday-13$`,
+sum(case when stat_date=date_sub(curdate(), interval '13' day) then units else 0 end) as `$Yesterday-12$`,
+sum(case when stat_date=date_sub(curdate(), interval '12' day) then units else 0 end) as `$Yesterday-11$`,
+sum(case when stat_date=date_sub(curdate(), interval '11' day) then units else 0 end) as `$Yesterday-10$`,
+sum(case when stat_date=date_sub(curdate(), interval '10' day) then units else 0 end) as `$Yesterday-9$`,
+sum(case when stat_date=date_sub(curdate(), interval '9' day) then units else 0 end) as `$Yesterday-8$`,
+sum(case when stat_date=date_sub(curdate(), interval '8' day) then units else 0 end) as `$Yesterday-7$`,
+sum(case when stat_date=date_sub(curdate(), interval '7' day) then units else 0 end) as `$Yesterday-6$`,
+sum(case when stat_date=date_sub(curdate(), interval '6' day) then units else 0 end) as `$Yesterday-5$`,
+sum(case when stat_date=date_sub(curdate(), interval '5' day) then units else 0 end) as `$Yesterday-4$`,
+sum(case when stat_date=date_sub(curdate(), interval '4' day) then units else 0 end) as `$Yesterday-3$`,
+sum(case when stat_date=date_sub(curdate(), interval '3' day) then units else 0 end) as `$Yesterday-2$`,
+sum(case when stat_date=date_sub(curdate(), interval '2' day) then units else 0 end) as `$Yesterday-1$`,
+sum(case when stat_date=date_sub(curdate(), interval '1' day) then units else 0 end) as `$Yesterday$`
+from tmp.revenue a
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT 5 as seq,
+-2,
+'Net DARPPU' as Metric,
+0.7*a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+0.7*a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+0.7*a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+0.7*a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+0.7*a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+0.7*a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+0.7*a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+0.7*a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+0.7*a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+0.7*a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+0.7*a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+0.7*a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+0.7*a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+0.7*a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.game_id=-2
+and a.metric='Gross Revenue'
+and b.metric='Transactions'
+group by 1,2,3
+order by 1,2,3
+;
+
+insert into tmp.weekly_metrics
+SELECT  7 as seq,
+-2 as game_id,
+'Conversion' as Metric,
+100.0*a.`$Yesterday-13$`/b.`$Yesterday-13$` as `$Yesterday-13$`,
+100.0*a.`$Yesterday-12$`/b.`$Yesterday-12$` as `$Yesterday-12$`,
+100.0*a.`$Yesterday-11$`/b.`$Yesterday-12$` as `$Yesterday-11$`,
+100.0*a.`$Yesterday-10$`/b.`$Yesterday-10$` as `$Yesterday-10$`,
+100.0*a.`$Yesterday-9$`/b.`$Yesterday-9$` as `$Yesterday-9$`,
+100.0*a.`$Yesterday-8$`/b.`$Yesterday-8$` as `$Yesterday-8$`,
+100.0*a.`$Yesterday-7$`/b.`$Yesterday-7$` as `$Yesterday-7$`,
+100.0*a.`$Yesterday-6$`/b.`$Yesterday-6$` as `$Yesterday-6$`,
+100.0*a.`$Yesterday-5$`/b.`$Yesterday-5$` as `$Yesterday-5$`,
+100.0*a.`$Yesterday-4$`/b.`$Yesterday-4$` as `$Yesterday-4$`,
+100.0*a.`$Yesterday-3$`/b.`$Yesterday-3$` as `$Yesterday-3$`,
+100.0*a.`$Yesterday-2$`/b.`$Yesterday-2$` as `$Yesterday-2$`,
+100.0*a.`$Yesterday-1$`/b.`$Yesterday-1$` as `$Yesterday-1$`,
+100.0*a.`$Yesterday$`/b.`$Yesterday$` as `$Yesterday$`
+from tmp.weekly_metrics a,
+tmp.weekly_metrics b
+where a.game_id=b.game_id
+and a.game_id=-2
+and a.metric='Transactions'
+and b.metric='DAU'
+group by 1,2,3
+order by 1,2,3
+;
+
+# RESULTS
+
+# AGH
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=1
+order by seq
+;
+</query>
+<query time="10" name="sbbpaid" title="SBB 14 Day Paid Summary">
+# SBB Paid
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=21
+order by seq
+;
+</query>
+<query time="10" name="sbbfree" title="SBB 14 Day Free Summary">
+# SBB Free
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=24
+order by seq
+;
+
+</query>
+<query time="10" name="wb" title="Warbands 14 Day Summary">
+# Warbands
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=11
+order by seq
+;
+
+</query>
+<query time="10" name="pong" title="Pong 14 Day Summary">
+# Pong
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=25
+order by seq
+;
+
+</query>
+<query time="10" name="outlaw" title="Outlaw 14 Day Summary">
+# Outlaw
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=23
+order by seq
+;
+
+</query>
+<query time="10" name="other" title="Other 14 Day Summary">
+# Others
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=-1
+order by seq
+;
+
+</query>
+<query time="10" name="all" title="Atari Total 14 Day Summary">
+# Total
+select Metric,
+`$Yesterday-13$`,
+`$Yesterday-12$`,
+`$Yesterday-11$`,
+`$Yesterday-10$`,
+`$Yesterday-9$`,
+`$Yesterday-8$`,
+`$Yesterday-7$`,
+`$Yesterday-6$`,
+`$Yesterday-5$`,
+`$Yesterday-4$`,
+`$Yesterday-3$`,
+`$Yesterday-2$`,
+`$Yesterday-1$`,
+`$Yesterday$`
+from tmp.weekly_metrics
+where game_id=-2
+order by seq
+;
+
+</query>
+<parm name="Yesterday" text="Yesterday" default="Yesterday" type="date"/>
+<parm name="Yesterday-1" text="Yesterday-1" default="Yesterday-1d" type="date"/>
+<parm name="Yesterday-2" text="Yesterday-2" default="Yesterday-2d" type="date"/>
+<parm name="Yesterday-3" text="Yesterday-3" default="Yesterday-3d" type="date"/>
+<parm name="Yesterday-4" text="Yesterdaa-4" default="Yesterday-4d" type="date"/>
+<parm name="Yesterday-5" text="Yesterday-5" default="Yesterday-5d" type="date"/>
+<parm name="Yesterday-6" text="Yesterday-6" default="Yesterday-6d" type="date"/>
+<parm name="Yesterday-7" text="Yesterday-7" default="Yesterday-7d" type="date"/>
+<parm name="Yesterday-8" text="Yesterday-8" default="Yesterday-8d" type="date"/>
+<parm name="Yesterday-9" text="Yesterday-9" default="Yesterday-9d" type="date"/>
+<parm name="Yesterday-10" text="Yesterday-10" default="Yesterday-10d" type="date"/>
+<parm name="Yesterday-11" text="Yesterday-11" default="Yesterday-11d" type="date"/>
+<parm name="Yesterday-12" text="Yesterday-12" default="Yesterday-12d" type="date"/>
+<parm name="Yesterday-13" text="Yesterday-13" default="Yesterday-13d" type="date"/>
+<row column="Metric"> 
+<value name="Installs" format="number"/>
+<value name="DAU" format="number"/>
+<value name="DARPU" format="currency(3)"/>
+<value name="Net DARPU" format="currency(3)"/>
+<value name="Net DARPPU" format="currency(3)"/>
+<value name="Transactions" format="number"/>
+<value name="Conversion" format="percent"/>
+<value name="Gross Revenue" format="currency"/>
+</row>
+</xml>

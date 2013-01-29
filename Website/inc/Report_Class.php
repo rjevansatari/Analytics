@@ -1,4 +1,7 @@
 <?php
+        ini_set('memory_limit', '128M');
+        error_reporting(E_ALL);
+
 // Parameter class
 // 
 //
@@ -108,7 +111,7 @@ class ReportParameter {
         	elseif ( $this->type == "date" ) {
                 	//Process date parameters
                 	echo "<td>".$this->text.":</td><td>\n";
-                	echo "<input type='text' style='{border: solid 1px}' name='".$this->name."' id='cal1Date".$this->ndate."' autocomplete='off' size='20' value='' /></td>\n";
+                	echo "<input type='text' style='{border: solid 1px}' name='".$this->name."' id='cal1Date".$this->ndate."' autocomplete='off' size='20' value='".$this->default."' /></td>\n";
         	}
         	elseif ( $this->type == "edit" ) {
                 	echo "<td>".$this->text.":</td><td>\n";
@@ -395,19 +398,49 @@ class Table extends Report
 		$table->setAutoGrow(true);
 		$table->setRowAttributes(0, $rAttrs, true);
 
+		//$yui_data='var data = [\n';
+		//$yui_table='var table = new Y.DataTable({\n';
+
 		$record=0;
 
 		while ($row = db_fetch_assoc($result)) {
+
+			$row_format=FALSE;
 
 			if ( $record > 0 ) {
 				$col=0;
 				$table->setCellContents($record+1, $col, $record+1);	
 				$table->setRowAttributes($record+1, $rAttrs, true);
+
 	
 				foreach ($row as $key => $value) {
+
 					$col++;
-					if ( isset($this->formats[strtolower($key)]) ) {
-						$table->setCellContents($record+1, $col, $this->formatValue($this->formats[strtolower($key)], $value));	
+
+					// This checks if we have a valid ROW format based on col 1 value
+					if ( $col == 1 && 
+					     isset($this->formats[strtolower($key)]) &&
+					     $this->formats[strtolower($key)]->class == 'row' &&
+					     isset($this->formats[strtolower($key)]->rows[strtolower($value)]) ) {
+						$row_format=TRUE;
+						$row_format_column=strtolower($key);
+						$row_format_value=strtolower($value);
+					}
+
+					if ( $col > 1 && $row_format == TRUE ) {
+						// Valid ROW format
+						$table->setCellContents($record+1, $col, $this->formatValue($this->formats[$row_format_column]->rows[$row_format_value], $value));	
+					}
+					else if ( isset($this->formats[strtolower($key)]) ) {
+						// Valid format
+						if ( $this->formats[strtolower($key)]->class == 'column' ) {
+							// Valid column format
+							$table->setCellContents($record+1, $col, $this->formatValue($this->formats[strtolower($key)]->type, $value));	
+						}
+						else {
+							// Row format, but invalid value
+							$table->setCellContents($record+1, $col, $value);	
+						}
 					}
 					else {
 						// If not format, we assume its a number
@@ -427,9 +460,18 @@ class Table extends Report
 			else if ( $record == 0 ) {
 				$col=0;
 				$table->setHeaderContents(0, $col, '#');
+				//$yui_column='columns: [';
+
 				foreach ($row as $key => $value) {
 					$col++;
 					$table->setHeaderContents($record, $col, ucfirst($key));
+					if ( $col > 1 ) {
+						//$yui_column.=$yui_column.",\"$col\"";
+					}
+					else {
+						//$yui_column.=$yui_column."\"$col\"";
+					}
+						
 					//CSV
 					if ( $col == 1 ) {
 						fwrite($fh, "$key");
@@ -438,19 +480,45 @@ class Table extends Report
 						fwrite($fh,",$key");
 					}
 				}
+				//$yui_column.=$yui_column."]";
 				fwrite($fh,"\n");
 	
 				$col=0;
 	
 				$table->setCellContents($record+1, $col, $record+1);	
 				$table->setRowAttributes($record+1, $rAttrs, true);
+
 				foreach ($row as $key => $value) {
 					$col++;
-					if ( isset($this->formats[strtolower($key)]) ) {
-						$table->setCellContents($record+1, $col, $this->formatValue($this->formats[strtolower($key)], $value));	
+
+					// This checks if we have a valid ROW format based on col 1 value
+
+					if ( $col == 1 && 
+					     isset($this->formats[strtolower($key)]) &&
+					     $this->formats[strtolower($key)]->class == 'row' &&
+					     isset($this->formats[strtolower($key)]->rows[strtolower($value)]) ) {
+						$row_format=TRUE;
+						$row_format_column=strtolower($key);
+						$row_format_value=strtolower($value);
+					}
+
+					if ( $col > 1 && $row_format == TRUE ) {
+						// Valid ROW format
+						$table->setCellContents($record+1, $col, $this->formatValue($this->formats[$row_format_column]->rows[$row_format_value], $value));	
+					}
+					else if ( isset($this->formats[strtolower($key)]) ) {
+						// Valid Format
+						if ( $this->formats[strtolower($key)]->class == 'column' ) {
+							// Valid Column Format
+							$table->setCellContents($record+1, $col, $this->formatValue($this->formats[strtolower($key)]->type, $value));	
+						}
+						else {
+							// Invalid Row Format
+							$table->setCellContents($record+1, $col, $value);	
+						}
 					}
 					else {
-						// If not format, we assume its a number
+						// No format
 						$table->setCellContents($record+1, $col, $value);	
 					}
 					// CSV
@@ -569,7 +637,7 @@ class Chart extends Report
 					if ( isset($this->columns[$key]) && isset($this->formats[strtolower($key)]) ) {
 	
 						// If we have a format, check its type
-						if ( in_array($this->formats[strtolower($key)], array('string','date')) ) {
+						if ( in_array($this->formats[strtolower($key)]->type, array('string','date')) ) {
 							if ( $col == 1 ) { 
 								$chartData.="['".$value."'";
 							}
@@ -577,7 +645,7 @@ class Chart extends Report
 								$chartData.=",'".$value."'";
 							}
 						}
-						elseif ( in_array($this->formats[strtolower($key)], array('date')) ) {
+						elseif ( in_array($this->formats[strtolower($key)]->type, array('date')) ) {
 							if ( $col == 1 ) { 
 								$chartData.="[new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
@@ -585,7 +653,7 @@ class Chart extends Report
 								$chartData.=", new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
 						}
-						elseif ( in_array($this->formats[strtolower($key)], array('number')) ) {
+						elseif ( in_array($this->formats[strtolower($key)]->type, array('number')) ) {
 							if ( $col == 1 ) { 
 								$chartData.="[".round($value);
 							}
@@ -634,7 +702,7 @@ class Chart extends Report
 					if ( isset($this->columns[$key]) && isset($this->formats[strtolower($key)]) ) {
 	
 						// If we have a format, check its type
-						if ( in_array($this->formats[strtolower($key)], array('string','date')) ) {
+						if ( in_array($this->formats[strtolower($key)]->type, array('string','date')) ) {
 							if ( $col == 1 ) { 
 								$chartData.="['".$value."'";
 							}
@@ -642,7 +710,7 @@ class Chart extends Report
 								$chartData.=",'".$value."'";
 							}
 						}
-						elseif ( in_array($this->formats[strtolower($key)], array('date')) ) {
+						elseif ( in_array($this->formats[strtolower($key)]->type, array('date')) ) {
 							if ( $col == 1 ) { 
 								$chartData.="[new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
@@ -650,7 +718,7 @@ class Chart extends Report
 								$chartData.=", new date(".substr($value,0,4).",".substr($value,5,2).",".substr($value, 8,2).")";
 							}
 						}
-						elseif ( in_array($this->formats[strtolower($key)], array('number')) ) {
+						elseif ( in_array($this->formats[strtolower($key)]->type, array('number')) ) {
 							if ( $col == 1 ) { 
 								$chartData.="[".round($value);
 							}
@@ -707,13 +775,26 @@ legend: ".$this->legend."
 class Format 
 {
 
-	public $columName;
+	public $columnName;
+	public $rowName;
 	public $type;
+	public $class;
 
 	function __construct($format) {
 
-		$this->columnName=strtolower($format['name']);
-		$this->type=strtolower($format['format']);
+		if ( isset($format['name']) ) { 
+			$this->columnName=strtolower($format['name']);
+			$this->type=strtolower($format['format']);
+			$this->class='column';
+		}
+		elseif ( isset($format['column']) ) {
+			$this->columnName=strtolower($format['column']);
+			$this->class='row';
+
+			foreach ( $format['value'] as $row => $format ) {
+				$this->rows[strtolower($format['name'])]=$format['format'];
+			}
+		}
 	}
 
 }
@@ -811,16 +892,28 @@ class Report
 				case 'description':
 					$this->description=$value;
 				break;
-				case 'column':
+				case 'row':
 					if ( isset($value[0]) ) {
 						foreach ( $value as $index => $format ) {
 							$f = new Format($format);
-							$this->formats[$f->columnName]=$f->type;
+							$this->formats[$f->columnName]=$f;
 						} 
 					}
 					else {
 						$f = new Format($value);
-						$this->formats[$f->columnName]=$f->type;
+						$this->formats[$f->columnName]=$f;
+					}
+				break;
+				case 'column':
+					if ( isset($value[0]) ) {
+						foreach ( $value as $index => $format ) {
+							$f = new Format($format);
+							$this->formats[$f->columnName]=$f;
+						} 
+					}
+					else {
+						$f = new Format($value);
+						$this->formats[$f->columnName]=$f;
 					}
 				break;
 				case 'parm':
@@ -853,6 +946,18 @@ class Report
 		$this->nPassedParms = count($this->passedParms);
 
        	 	foreach ( $this->passedParms as $key => $value ) {
+
+			if ( strpos(strtolower($value), 'yesterday') === FALSE ) {
+			}
+			else{
+				if ( strpos($value,'-') > 0 ) {
+					$days=substr($value, strpos($value,'-')+1,
+					      strpos($value,'d', strpos($value,'-'))-
+					      strpos($value,'-')-1);
+					$this->passedParms[$key]=date('Y-m-d', mktime(0, 0, 0, date("m")  , date("d")-$days-1, date("Y")));
+				}
+			} 
+
 			$this->passedParms[$key]=str_ireplace('today',date('Y-m-d'),$this->passedParms[$key]);
 			$this->passedParms[$key]=str_ireplace('yesterday-29d',date('Y-m-d', mktime(0, 0, 0, date("m")  , date("d")-30, date("Y"))),$this->passedParms[$key]);
 			$this->passedParms[$key]=str_ireplace('yesterday',date('Y-m-d', mktime(0, 0, 0, date("m")  , date("d")-1, date("Y"))),$this->passedParms[$key]);
@@ -911,61 +1016,61 @@ class Report
 	function formatValue($format, $value)
 	{
 
-	       	switch ($format) {
+		switch ($format) {
        		case 'number':
-                	return number_format($value);
-               	break;
-              	case 'percent(1)':
-              		if (is_numeric($value)) {
+       	         	return number_format($value);
+       	        break;
+       		case 'percent(1)':
+       	       		if (is_numeric($value)) {
 				return number_format($value,1)."%";
 			}
 			else {
 				return $value;
 			}
-              	break;
-              	case 'percent(2)':
-                     	if (is_numeric($value)) {
-				return number_format($value,2)."%";
+       		break;
+       		case 'percent(2)':
+       	              	if (is_numeric($value)) {
+					return number_format($value,2)."%";
 			}
 			else {
 				return $value;
 			}
-              	break;
-               	case 'percent(3)':
-                       	if (is_numeric($value)) {
+       		break;
+       	        case 'percent(3)':
+       	               	if (is_numeric($value)) {
 				return number_format($value,3)."%";
 			}
 			else {
 				return $value;
 			}
-               	break;
+       	        break;
       		case 'percent':
-              		if (is_numeric($value)) { 
+       	       		if (is_numeric($value)) { 
 				return number_format($value,2)."%";
 			}
 			else {
 				return $value;
 			}
       		break;
-               	case 'decimal':
-                       	return number_format($value,2,'.',',');
-               	break;
-               	case 'currency(3)':
-                       	if (is_numeric($value)) {
+       	        case 'decimal':
+       	               	return number_format($value,2,'.',',');
+       	        break;
+       	        case 'currency(3)':
+       	               	if (is_numeric($value)) {
 				return "$".number_format($value,3,'.',',');
 			}
 			else {
 				return $value;
 			}
-               	break;
-               	case 'currency':
-                       	if (is_numeric($value)) {
+       	        break;
+       	        case 'currency':
+       	               	if (is_numeric($value)) {
 				return "$".number_format($value,2,'.',',');
 			}
 			else {
 				return $value;
 			}
-               	break;
+       	        break;
 		default:
 			return $value;
 		}
@@ -1005,6 +1110,8 @@ class Report
 					}
 					$this->tables[$query->name]->setData($result);
                                 }
+				//Note, some queries do not produce results so do not have an error
+				//catch at this point....
                         }
 		}
 
@@ -1034,7 +1141,7 @@ google.load('visualization', '1', {packages:['corechart']});\n";
 
 		// In case we have any parms in the title
 	        foreach ( $this->passedParms as $key => $value ) {
-	        	$this->title=str_replace("$".$key, $value, $this->title);
+	        	$this->title=str_replace("$".$key."$", $value, $this->title);
 	        }
 
 		if ( $this->batch == FALSE ) { 

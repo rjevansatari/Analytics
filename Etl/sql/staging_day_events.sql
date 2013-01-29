@@ -1,6 +1,6 @@
 # Clean up
 DROP DATABASE staging;
-CREATE DATABASE staging DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
+CREATE DATABASE staging DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 use staging;
 
@@ -16,7 +16,7 @@ CREATE TABLE staging.stage_event_day_raw (
  `event_id` smallint NOT NULL,
  `parm_id` smallint,
  `value` varchar(32)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1
+) ENGINE=MyISAM 
 ;
 
 LOAD DATA LOCAL INFILE '/home/revans/projects/analytics/csv/staging_day_events.csv' INTO TABLE staging.stage_event_day_raw

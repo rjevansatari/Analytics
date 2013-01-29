@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS staging.stage_user_event (
   `event` varchar(255) NOT NULL,
   `parm` varchar(255) NOT NULL,
   `value` varchar(80) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM DEFAULT ;
 
 truncate table staging.stage_user_event;
 
